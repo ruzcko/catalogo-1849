@@ -2,7 +2,17 @@
 
 A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
 
-> **Status: in progress.** The OCR of all 140 name-list pages is finishing; `catalogo_1849.csv` will be added here when it's done.
+**At a glance:** 53,331 entries from all 140 name-list pages (October 2026):
+
+| Status | Entries |
+| --- | ---: |
+| `hand` / `hand_unclear` (two pages typed by a person) | 792 |
+| `sure` | 8,580 |
+| `likely` | 37,216 |
+| `best_effort` | 4,718 |
+| `low` | 2,025 |
+
+A few scanned pages near the end carry no readable page number, so their `book_page` is empty. The Issuu scan skips a handful of pages, so a few short alphabetical stretches are missing.
 
 This is the first open, searchable list of the book's names that we know of. It powers the "The book" chapter of [Apelyido](https://apelyido.ruzcko.com).
 
