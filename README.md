@@ -75,7 +75,7 @@ For most uses, keep `hand`, `checked`, `sure` and `likely`.
     python tools/build_book.py           # catalogo_1849.csv -> book/data/ (pages, entries, search index)
     python -m http.server -d book 8000   # then open http://localhost:8000
 
-Links: `/58` opens page 58; `/fabella` finds a name and marks it; `/58/glubig` opens one entry's reading help (`/58/glubig-2` for a second one on the page). The older `#p=`, `#n=` and `#e=` links still work. When `book.js` or `style.css` change, bump the `?v=` in `index.html`.
+Links: `/58` opens page 58; `/fabella` finds a name and marks it; `/58/glubig` opens one entry's reading help (`/58/glubig-2` for a second one on the page). The older `#p=`, `#n=` and `#e=` links still work. When `book.js` or `style.css` change, bump the `?v=` in `index.html`. Shared links get their own preview card (`functions/[[path]].js` sets the tags, `functions/og.js` draws the card in IM Fell with resvg; no scan images).
 
 **Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (the Filipinas Heritage Library's scan, one line at a time, served by Apelyido rather than kept in this repo), the OCR's raw reading, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`.
 
