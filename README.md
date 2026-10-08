@@ -2,15 +2,15 @@
 
 A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
 
-**At a glance:** 53,331 entries from all 140 name-list pages (October 2026):
+**At a glance:** 53,331 entries from all 140 name-list pages (updated 8 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
-| `sure` | 8,580 |
-| `likely` | 37,216 |
-| `best_effort` | 4,718 |
-| `low` | 2,025 |
+| `sure` | 13,128 |
+| `likely` | 27,032 |
+| `best_effort` | 9,525 |
+| `low` | 2,854 |
 
 A few scanned pages near the end carry no readable page number, so their `book_page` is empty. The Issuu scan skips a handful of pages, so a few short alphabetical stretches are missing.
 
@@ -23,11 +23,21 @@ This is the first open, searchable list of the book's names that we know of. It 
 - **The scan:** digitized and made available online by the **Filipinas Heritage Library (Ayala Foundation)**: [Catálogo alfabético de apellidos on Issuu](https://issuu.com/filipinasheritagelibrary/docs/catalogo_alfabetico_de_apellidos). Thank you for preserving this book and making it accessible.
 - **Transcription:** OCR with [Surya](https://github.com/datalab-to/surya), corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
 
+### How the book's order is used
+
+The book is alphabetical on the **first three letters** of each name: on the hand-typed pages, 99–100% of neighbouring entries are in order on three letters, but only 80% on the fourth (the printed order really is *aagno, aagaoan*). So the cleanup uses three letters and no more:
+
+1. Every entry on a page starts with the page's letter, and an entry whose first two letters disagree with nearly all its neighbours is put back in line.
+2. Across the whole book, we find the longest chain of entries whose first three letters never go backwards (confident readings count more). An entry off that chain, sitting between two neighbours that start the same way, gets a one-letter fix (*tnpoc* between *tap…* names becomes *tapoc*). These fixes are right about 70% of the time on the hand-typed pages, so they are marked `best_effort`.
+3. Any other out-of-order entry is trusted one step less (`sure`/`likely` become `best_effort`, `best_effort` becomes `low`). On the hand-typed pages, 24 of the 26 entries demoted this way were indeed misread.
+
+`ocr_raw` always keeps what the OCR actually read.
+
 This repository contains only the transcribed text, not the page images.
 
 ## Read this before using it
 
-**This is a first, machine-read version.** The only scan online is about 910 pixels wide, so many letters are blurred. Measured against two pages typed by hand, the OCR reads 82–89% of names exactly and 96–99% within one letter. Every row says how much to trust it (see `status`). A higher-resolution scan would make it near-perfect, and corrections are very welcome.
+**This is a first, machine-read version.** The only scan online is about 910 pixels wide, so many letters are blurred. Measured against two pages typed by hand, the OCR reads 82–91% of names exactly and 95–99% within one letter. Every row says how much to trust it (see `status`). A higher-resolution scan would make it near-perfect, and corrections are very welcome.
 
 ## Files
 
@@ -49,10 +59,10 @@ This repository contains only the transcribed text, not the page images.
 | `hand` | Typed by a person from the scan |
 | `hand_unclear` | Typed by a person; `?` marks letters they couldn't read |
 | `checked` | An OCR reading confirmed or corrected by a person |
-| `sure` | Confident OCR (≥ 0.8) **and** a surname people still carry in the Philippines today |
+| `sure` | Confident OCR (≥ 0.8) **and** a surname people still carry in the Philippines today (in local-election candidate lists or the 2023 barangay officials) |
 | `likely` | Confident OCR (≥ 0.8), but not a surname found today (often an old native name) |
-| `best_effort` | Less confident OCR (0.6–0.8): probably right, check before relying on it |
-| `low` | Low-confidence OCR (< 0.6): often wrong |
+| `best_effort` | Less confident OCR (0.6–0.8), a one-letter fix from the book's order, or a confident reading that breaks the order: probably right, check before relying on it |
+| `low` | Low-confidence OCR (< 0.6), or a less confident one that breaks the order: often wrong |
 
 For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
