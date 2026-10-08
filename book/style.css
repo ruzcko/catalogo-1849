@@ -82,7 +82,10 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .chip.s4 { color: #f0a35a; border-color: #9a5a22; }
 .entry .why { color: var(--muted); margin: 8px 0 12px; font-size: 15px; }
 .entry .crop { margin: 0 0 12px; }
-.entry .crop div { max-width: 100%; border-radius: 6px; background-color: #fff; background-repeat: no-repeat; }
+.entry .crop .img { position: relative; max-width: 100%; border-radius: 6px; background-color: #fff; background-repeat: no-repeat; }
+.entry .crop .mark { position: absolute; left: 0; border: 2px solid #e0932f; border-radius: 4px; box-sizing: border-box; }
+.entry .crop .around { color: var(--accent); text-decoration: underline; font-size: 12px; padding: 0; }
+.entry .order { margin: 0 0 10px; }
 .entry .crop figcaption { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .entry .q { margin: 8px 0 6px; font-weight: 700; }
 .entry .opts { display: grid; gap: 4px; margin-bottom: 8px; }

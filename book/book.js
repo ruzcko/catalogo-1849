@@ -7,7 +7,9 @@ import * as THREE from "three";
 // Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CELL_W = 400, CELL_H = 52, CELL_PAD = 6;   // a crop's cell in the strip: 200 x 26 scan pixels at 2x
+// A crop's cell in the strip (px, drawn at 2x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
+// ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
+const CELL_W = 400, CELL_H = 128, LINE_Y = 32, LINE_H = 52, ACROSS = 4, CELL_PAD = 6;
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
 const WHY = [
@@ -719,14 +721,22 @@ async function openEntry({ page, scan, e, orig = e }) {
   const [, , , , name, status, col, row, raw, crop] = e;
   // The crop, cut to the word's width and shown as large as fits.
   const wordW = Math.min(CELL_W, (orig[2] - orig[0] + CELL_PAD + 10) * 2);
-  const k = Math.min(1.25, (Math.min(innerWidth - 72, 400)) / wordW);
+  const room = Math.min(innerWidth - 72, 400);
+  // Just the entry's line, as large as fits; or the three lines around it, with the entry outlined.
+  const cropStyle = around => {
+    const k = around ? Math.min(1, room / CELL_W) : Math.min(1.25, room / wordW);
+    const cx = (crop % ACROSS) * CELL_W, cy = Math.floor(crop / ACROSS) * CELL_H + (around ? 0 : LINE_Y);
+    return { k, css: `background-image:url('${CROPS}${scan}.webp');background-size:${CELL_W * ACROSS * k}px auto;` +
+      `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
+  };
   const id = `${scan}.${col}.${row}`;
   history.replaceState(null, "", `#e=${id}`);
   dlg.innerHTML = `
     <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
     <p class="why">${WHY[status]}</p>
-    ${CROPS && crop != null ? `<figure class="crop"><div style="background-image:url('${CROPS}${scan}.webp');background-position:0 -${crop * CELL_H * k}px;background-size:${CELL_W * k}px auto;width:${wordW * k}px;height:${CELL_H * k}px"></div>
-      <figcaption>The scan, page ${page.n} · Filipinas Heritage Library</figcaption></figure>` : ""}
+    ${CROPS && crop != null ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
+      <figcaption>The scan, page ${page.n} · Filipinas Heritage Library · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
+    <p class="small order" hidden></p>
     ${raw ? `<p class="small">The OCR read <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
     <form class="readings" autocomplete="off">
       <p class="q">How do you read it?</p>
@@ -745,6 +755,22 @@ async function openEntry({ page, scan, e, orig = e }) {
   if (!res?.ok) { dlg.querySelector(".opts").innerHTML = `<p class="small">Couldn't load the readings. Try again later.</p>`; return; }
   const mine = voted(id);
   if (mine) return showTally(res.options, mine);
+  // The book is in order on the first three letters, so its neighbours narrow down how it can start.
+  if (res.prev || res.next) {
+    const o = dlg.querySelector(".order");
+    o.innerHTML = res.prev && res.next ? `In the book it comes between <b>${esc(res.prev)}</b> and <b>${esc(res.next)}</b>.`
+      : res.prev ? `In the book it comes after <b>${esc(res.prev)}</b>.` : `In the book it comes before <b>${esc(res.next)}</b>.`;
+    o.hidden = false;
+  }
+  const aroundBtn = dlg.querySelector(".around");
+  if (aroundBtn) aroundBtn.onclick = () => {
+    const img = dlg.querySelector(".crop .img"), mark = img.querySelector(".mark"), around = mark.hidden;
+    const { k, css } = cropStyle(around);
+    img.style.cssText = css;
+    mark.hidden = !around;
+    if (around) mark.style.cssText = `top:${LINE_Y * k}px;height:${LINE_H * k}px;width:${wordW * k}px`;
+    aroundBtn.textContent = around ? "Just this line" : "Show the lines around it";
+  };
   dlg.querySelector(".opts").innerHTML = res.options.map(o =>
     `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>our reading</small>` : ""}</label>`).join("");
   form.own.addEventListener("input", () => { form.querySelectorAll("input[name=pick]").forEach(r => { r.checked = false; }); });
