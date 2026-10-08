@@ -1,0 +1,12 @@
+# Code and styles change with each release: check for a newer copy after five minutes.
+/*.js
+  Cache-Control: public, max-age=300
+/*.css
+  Cache-Control: public, max-age=300
+
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
