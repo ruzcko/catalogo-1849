@@ -31,15 +31,24 @@
   <button type="button" id="where" class="where" aria-label="Go to a page"></button>
   <button type="button" id="next" class="icon" aria-label="Next page">›</button>
   <button type="button" id="unzoom" class="icon" aria-label="Zoom out" hidden>⤢</button>
+  <button type="button" id="sure" class="layout" aria-pressed="false" title="Show how sure we are of each reading, and help read the blurry ones">How sure?</button>
   <button type="button" id="layout" class="layout" aria-pressed="false" title="Straight columns, or names where they sit on the scan">Tidy</button>
 </nav>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
+<aside id="help" class="help" hidden>
+  <p><b>Page</b> is missing from the only scan online. Have a copy of the Catálogo, a photo of this page, or know a library that has one?</p>
+  <a class="primary" href="mailto:hello@ruzcko.com">Help fill this page</a>
+</aside>
+
+<dialog id="entry" class="entry" aria-label="Help read this name"></dialog>
+
 <dialog id="about">
   <h2>Catálogo alfabético de apellidos</h2>
   <p>In 1849 Governor-General Narciso Clavería ordered that families without fixed surnames take one from this book, about 61,000 names, Spanish and native, sent to every province.</p>
   <p>This is a recreation, not a scan: every page is set in type from an open, machine-read transcription of the National Archives of the Philippines' 1973 reprint, as digitized by the Filipinas Heritage Library. Each name keeps its column and line from the scanned page. Some readings are uncertain, and a few pages are missing from the only scan online.</p>
+  <p><b>How sure?</b> shows how confident we are of each reading: faint names are our best guess, orange ones are blurry. Tap one to see the scan and tell us how you read it. Votes are anonymous: we keep the reading and a random code your browser makes up, nothing else.</p>
   <p>Drag or use ‹ › to turn pages. Double-tap or pinch to zoom. <b>Tidy</b> straightens the columns; <b>As scanned</b> keeps every name where it sits on the scanned page.</p>
   <p class="small">Transcription: <a href="https://github.com/ruzcko/catalogo-1849" target="_blank" rel="noopener">github.com/ruzcko/catalogo-1849</a> (CC BY 4.0). Code: MIT. Type: IM Fell, by Igino Marini (OFL). Made by <a href="https://apelyido.ruzcko.com" target="_blank" rel="noopener">Apelyido</a>.</p>
   <form method="dialog"><button>Close</button></form>

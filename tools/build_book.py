@@ -7,7 +7,10 @@ Each printed page keeps the entries where the scan has them (x0, y0, x1, y1 in s
 recreated page looks like the scanned one. Hand-typed pages have no positions: they're laid out in six even
 columns. Pages missing from the scan get a placeholder, so the page numbers run on as in the book.
 
-Each entry: [x0, y0, x1, y1, name, status, column]. Status codes: 0 hand-typed or checked, 1 sure, 2 likely,
+Each entry: [x0, y0, x1, y1, name, status, column, row, raw OCR reading (doubtful entries only), crop]. The
+entry's id is "<scan>.<column>.<row>", as in the CSV. Doubtful entries (best effort and low) are numbered in page
+order (the last field): their scan crops sit in that order in the page's crop strip, made by the private Apelyido
+pipeline (not in this repo). Status codes: 0 hand-typed or checked, 1 sure, 2 likely,
 3 best effort, 4 low. The site can draw entries where they are (as scanned) or straightened into even columns.
 """
 import csv
@@ -19,6 +22,15 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "book" / "data"
 STATUS = {"hand": 0, "hand_unclear": 0, "checked": 0, "sure": 1, "likely": 2, "best_effort": 3, "low": 4}
 MIN_ENTRIES = 30  # the last scans (back matter) hold only a few stray words
+
+
+def raw(r):
+    """What the OCR actually read, cleaned like an entry, for doubtful entries whose reading differs from it."""
+    if STATUS[r["status"]] < 3:
+        return None
+    t = r["ocr_raw"].strip().lower().strip(".,;:'\"`´’·•*°<>/ ")
+    t = "".join(c for c in t if c.isalpha() or c in "- ")
+    return t if t and t != r["entry"] else None
 
 
 def page_numbers(read):
@@ -60,11 +72,21 @@ def main():
             for i, r in enumerate(sorted(entries, key=lambda r: int(r["row"]))):
                 col, row = divmod(i, per_col)
                 x0, y0 = 62 + col * 140, 150 + row * (1250 / per_col)
-                out.append([round(x0), round(y0), round(x0 + 110), round(y0 + 14), r["entry"], STATUS[r["status"]], col + 1])
+                out.append([round(x0), round(y0), round(x0 + 110), round(y0 + 14), r["entry"], STATUS[r["status"]], col + 1,
+                            int(r["row"])])
         else:
             out = [[round(float(r["x0"])), round(float(r["y0"])), round(float(r["x1"])), round(float(r["y1"])),
-                    r["entry"], STATUS[r["status"]], int(r["column"])]
+                    r["entry"], STATUS[r["status"]], int(r["column"]), int(r["row"]), raw(r)]
                    for r in sorted(entries, key=lambda r: (int(r["column"]), int(r["row"])))]
+        k = 0
+        for e in out:  # number the doubtful entries: their crops' order in the page's crop strip
+            while len(e) < 9:
+                e.append(None)
+            if e[5] >= 3 and not hand:
+                e.append(k)
+                k += 1
+            else:
+                e.append(None)
         names = [e[4] for e in out if e[5] < 4]
         letters = sorted({e[4][0] for e in out if e[5] < 3}, key=lambda c: -sum(e[4][0] == c for e in out))
         (OUT / "p" / f"{n}.json").write_text(json.dumps({"n": n, "scan": scan, "e": out}, ensure_ascii=False,

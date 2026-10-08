@@ -3,6 +3,20 @@
 // turned are real meshes, so it stays light on phones.
 import * as THREE from "three";
 
+// ---------- Reader help ----------
+// Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
+// Set to null to stop showing them.
+const CROPS = "https://apelyido.ruzcko.com/scan/";
+const CROP_W = 300, CROP_H = 39;                 // a crop as shown (its cell in the strip is 400 x 52)
+const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
+const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
+const WHY = [
+  "A person typed this page from the scan.",
+  "The OCR was confident, and people still carry this surname today.",
+  "The OCR was confident, but nobody carries this name today: often an old native name.",
+  "The OCR wasn't sure, or the reading breaks the book's alphabetical order. Probably right; help us check.",
+  "The scan is blurry here and the OCR's reading is often wrong. Can you read it?"];
+
 // ---------- Book layout ----------
 const SCAN_W = 910, SCAN_H = 1498;              // the scanned page, in pixels: entry boxes use these
 const H = 1.5, W = H * SCAN_W / SCAN_H;          // a page in world units
@@ -163,7 +177,8 @@ function drawMissing(g, side, n) {
   centred(g, `Page ${n} is missing`, TEX_H / 2 - 40, 54, FONT);
   g.font = `italic 34px ${FONT}`;
   centred(g, "from the only scan online.", TEX_H / 2 + 20, 34, `italic ${FONT}`);
-  centred(g, "If you have a copy of the Catálogo, we'd love to hear from you.", TEX_H / 2 + 110, 28, `italic ${FONT}`, "#6b5a45");
+  centred(g, "Have a copy of the Catálogo, or know who does?", TEX_H / 2 + 110, 28, `italic ${FONT}`, "#6b5a45");
+  centred(g, "Tap “Help fill this page” below.", TEX_H / 2 + 152, 28, `italic ${FONT}`, "#6b5a45");
 }
 
 function drawPrinted(g, side, page, data) {
@@ -180,13 +195,28 @@ function drawPrinted(g, side, page, data) {
   g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
   centred(g, page.letter, 118 * S, Math.round(17 * S));
   g.font = `${size}px ${FONT}`;
-  for (const [x0, y0, x1, y1, name] of entries) {
+  for (const [x0, y0, x1, y1, name, status] of entries) {
+    if (sure && status === 4) {   // blurry: highlighted so it stands out
+      g.fillStyle = "rgba(232, 150, 60, .32)";
+      g.fillRect(x0 * S - 4, y0 * S - 2, Math.max(x1 - x0, 50) * S + 8, (y1 - y0) * S + 6);
+    }
     if (highlight && highlight.n === page.n && highlight.name === name) {
       g.fillStyle = "rgba(240, 196, 60, .55)";
       g.fillRect(x0 * S - 6, y0 * S - 4, Math.max(x1 - x0, 60) * S + 12, (y1 - y0) * S + 10);
     }
     g.fillStyle = INK;
     g.globalAlpha = 0.82 + 0.18 * Math.abs(Math.sin(x0 * 12.9898 + y0 * 78.233));  // uneven 19th-century ink
+    if (sure && status === 3) {   // best guess: faint, with a dotted underline
+      g.globalAlpha = 0.5;
+      g.setLineDash([3, 4]);
+      g.strokeStyle = "rgba(120, 80, 30, .8)";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(x0 * S, y1 * S + 2);
+      g.lineTo(x0 * S + Math.min(g.measureText(name + ".").width, Math.max(x1 - x0, 40) * S * 1.12), y1 * S + 2);
+      g.stroke();
+      g.setLineDash([]);
+    }
     // Squeeze a name into its box (plus a little), so two overlapping OCR lines don't run into each other.
     g.fillText(name + ".", x0 * S, y1 * S - 2 * S, Math.max(x1 - x0, 40) * S * 1.12);
     g.globalAlpha = 1;
@@ -528,6 +558,18 @@ function updateBar() {
   document.getElementById("where").textContent = text || "Catálogo";
   document.getElementById("prev").disabled = cur === 0 && side === "R";
   document.getElementById("next").disabled = cur === LEAVES;
+  // Help for a missing page in view.
+  const inView = narrow() || cur === 0 || cur === LEAVES ? [kind] : [FACES[2 * cur - 1], FACES[2 * cur]];
+  const gap = inView.find(k => k && k.missing);
+  const help = document.getElementById("help");
+  help.hidden = !gap;
+  if (gap) {
+    help.querySelector("b").textContent = `Page ${gap.n}`;
+    help.querySelector("a").href = `mailto:hello@ruzcko.com?subject=${encodeURIComponent(`Catálogo 1849, page ${gap.n}`)}&body=${encodeURIComponent(
+      `Hi! About page ${gap.n} of the Catálogo alfabético de apellidos, which is missing from the scan:\n\n` +
+      `[ ] I have a copy (which edition? 1849 original / 1973 National Archives reprint / other)\n` +
+      `[ ] I know a library or person who has one: \n[ ] I can send a photo of the page\n\n`)}`;
+  }
   const n = kind && kind.n;
   const hash = n ? `#p=${n}` : "";
   if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
@@ -605,6 +647,148 @@ function toast(text) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
 }
 
+// ---------- How sure? and reading help ----------
+let sure = false;
+try { sure = localStorage.getItem("sure") === "1"; } catch {}
+function redrawAll() {
+  for (const f of [...canvases.keys()]) {
+    canvases.delete(f);
+    for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
+  }
+  order.length = 0;
+  showSpread();
+}
+function setSure(on) {
+  sure = on;
+  try { localStorage.setItem("sure", on ? "1" : "0"); } catch {}
+  document.getElementById("sure").setAttribute("aria-pressed", String(on));
+  redrawAll();
+  if (on) toast("Faint: our best guess · Orange: blurry. Tap one to help read it.");
+}
+
+const randomId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
+const device = (() => {   // a random code for this browser, so one device gets one vote per entry
+  try {
+    let d = localStorage.getItem("device");
+    if (!d) { d = randomId(); localStorage.setItem("device", d); }
+    return d;
+  } catch { return randomId(); }
+})();
+const voted = id => { try { return localStorage.getItem(`voted:${id}`); } catch { return null; } };
+
+// The entry under a tap, if any: which page was hit, and which name's box (in the current layout).
+async function entryAt(px, py) {
+  if (turning || cur === 0 || cur === LEAVES) return null;
+  const p = worldAt(px, py);
+  const right = p.x >= 0, f = right ? 2 * cur : 2 * cur - 1, kind = FACES[f];
+  if (!kind || !kind.n || kind.missing) return null;
+  if (narrow() && (right ? "R" : "L") !== side) return null;
+  const sx = ((p.x - (right ? 0 : -W)) / W) * SCAN_W, sy = ((H / 2 - p.y) / H) * SCAN_H;
+  const data = await loadPage(kind.n);
+  let best = null, bestD = Infinity;
+  for (const e of layoutOf(data)) {
+    if (sx < e[0] - 6 || sx > Math.max(e[2], e[0] + 40) + 6 || sy < e[1] - 4 || sy > e[3] + 4) continue;
+    const d = Math.abs(sy - (e[1] + e[3]) / 2);
+    if (d < bestD) { best = e; bestD = d; }
+  }
+  return best && { page: kind, scan: data.scan, e: best };
+}
+
+async function openEntryAt(px, py) {
+  const hit = await entryAt(px, py);
+  if (!hit) return false;
+  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. We're confident about this one.`); return true; }
+  openEntry(hit);
+  return true;
+}
+
+let turnstileReady = null;
+function loadTurnstile() {
+  turnstileReady ||= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.append(s);
+  });
+  return turnstileReady;
+}
+
+const dlg = document.getElementById("entry");
+async function openEntry({ page, scan, e }) {
+  const [, , , , name, status, col, row, raw, crop] = e;
+  const id = `${scan}.${col}.${row}`;
+  history.replaceState(null, "", `#e=${id}`);
+  dlg.innerHTML = `
+    <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
+    <p class="why">${WHY[status]}</p>
+    ${CROPS && crop != null ? `<figure class="crop"><div style="background-image:url('${CROPS}${scan}.webp');background-position:0 -${crop * CROP_H}px;background-size:${CROP_W}px auto;width:${CROP_W}px;height:${CROP_H}px"></div>
+      <figcaption>The scan, page ${page.n} · Filipinas Heritage Library</figcaption></figure>` : ""}
+    ${raw ? `<p class="small">The OCR read <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
+    <form class="readings" autocomplete="off">
+      <p class="q">How do you read it?</p>
+      <div class="opts"><p class="small">Loading…</p></div>
+      <label class="own">Something else: <input name="own" maxlength="20" spellcheck="false" autocapitalize="off" placeholder="type your reading"></label>
+      <p class="err" role="alert"></p>
+      <div class="ts"></div>
+      <div class="acts"><button type="submit" class="primary">Vote</button><button type="button" class="notsure">Not sure, just show the votes</button></div>
+    </form>
+    <div class="tally" hidden></div>`;
+  dlg.showModal();
+  dlg.querySelector(".x").onclick = () => dlg.close();
+  const form = dlg.querySelector("form"), err = dlg.querySelector(".err");
+  let res;
+  try { res = await fetch(`/api/entry?id=${encodeURIComponent(id)}`).then(r => r.json()); } catch { res = null; }
+  if (!res?.ok) { dlg.querySelector(".opts").innerHTML = `<p class="small">Couldn't load the readings. Try again later.</p>`; return; }
+  const mine = voted(id);
+  if (mine) return showTally(res.options, mine);
+  dlg.querySelector(".opts").innerHTML = res.options.map(o =>
+    `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>our reading</small>` : ""}</label>`).join("");
+  form.own.addEventListener("input", () => { form.querySelectorAll("input[name=pick]").forEach(r => { r.checked = false; }); });
+  form.querySelectorAll("input[name=pick]").forEach(r => r.addEventListener("change", () => { form.own.value = ""; }));
+  dlg.querySelector(".notsure").onclick = () => showTally(res.options, null);
+  let token = "";
+  loadTurnstile().then(() => {
+    if (!dlg.open) return;
+    window.turnstile.render(dlg.querySelector(".ts"), { sitekey: SITEKEY, size: "flexible", callback: t => { token = t; } });
+  }).catch(() => { err.textContent = "Couldn't load the spam check. Try again later."; });
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const pick = form.querySelector("input[name=pick]:checked")?.value, own = form.own.value.trim();
+    const reading = own || pick;
+    if (!reading) { err.textContent = "Pick a reading or type your own."; return; }
+    if (!token) { err.textContent = "One moment: we're checking you're a person."; return; }
+    err.textContent = "";
+    const r = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id, reading, device, token }) }).then(x => x.json()).catch(() => null);
+    if (r?.ok || r?.error === "already") {
+      try { localStorage.setItem(`voted:${id}`, reading); } catch {}
+      showTally(r.options, reading, r.pending);
+    } else {
+      err.textContent = r?.message || (r?.error === "verify" ? "The spam check failed. Please try again." : "Couldn't save your vote. Try again later.");
+      token = "";
+      try { window.turnstile?.reset(dlg.querySelector(".ts")); } catch {}
+    }
+  };
+}
+
+// The tally: shown after you vote, or when you choose "Not sure" (so votes aren't swayed by the count).
+function showTally(options, mine, pending) {
+  const total = options.reduce((a, o) => a + o.v, 0), top = Math.max(...options.map(x => x.v), 1);
+  const list = [...options].sort((a, b) => b.v - a.v);
+  const box = dlg.querySelector(".tally");
+  box.innerHTML = `<p class="q">${mine ? "Thanks! Here's how readers read it:" : "How readers read it so far:"}</p>` +
+    (total ? list.map(o => `<div class="bar${o.r === mine ? " me" : ""}"><i style="width:${Math.round(100 * o.v / top)}%"></i>
+      <span>${esc(o.r)}${o.ours ? " <small>our reading</small>" : ""}</span><b>${o.v}</b></div>`).join("") : `<p class="small">No votes yet. Be the first!</p>`) +
+    (pending ? `<p class="small">Your own reading shows here once someone else reads it the same way.</p>` : "") +
+    `<p class="small">When readers agree, we check it and fix the dataset for everyone.</p>`;
+  box.hidden = false;
+  if (mine) dlg.querySelector("form").hidden = true;
+  else dlg.querySelector(".notsure").hidden = true;
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
 // ---------- Input ----------
 const pointers = new Map();
 let drag = null, lastTap = 0, pinch = null;
@@ -652,10 +836,11 @@ const up = e => {
       lastTap = 0;
     } else {
       lastTap = now;
-      const x = e.clientX;
-      if (view.zoom <= 1.05) setTimeout(() => {
+      const x = e.clientX, y = e.clientY;
+      setTimeout(async () => {
         if (lastTap !== now) return;   // it became a double tap
-        if (x < innerWidth * 0.22) prev(); else if (x > innerWidth * 0.78) next();
+        if (sure && await openEntryAt(x, y)) return;
+        if (view.zoom <= 1.05) { if (x < innerWidth * 0.22) prev(); else if (x > innerWidth * 0.78) next(); }
       }, 310);
     }
   }
@@ -673,6 +858,7 @@ document.getElementById("next").onclick = next;
 document.getElementById("prev").onclick = prev;
 document.getElementById("unzoom").onclick = frame;
 document.getElementById("layout").onclick = () => setLayout(!tidy);
+document.getElementById("sure").onclick = () => setSure(!sure);
 document.getElementById("info").onclick = () => document.getElementById("about").showModal();
 document.getElementById("where").onclick = () => {
   const v = prompt("Go to page (1–141), or type a surname:");
@@ -736,8 +922,20 @@ window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }
   FACES.push("fin", null, "endpaper", "backcover");   // the back cover is the back of the last leaf
   LEAVES = FACES.length / 2;
   const m = /p=(\d+)/.exec(location.hash), nm = /n=([^&]+)/.exec(location.hash);  // before resize() rewrites it
+  const ent = /e=(\d{2,3})\.(\d{1,2})\.(\d{1,3})/.exec(location.hash);
   resize();
   document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
+  document.getElementById("sure").setAttribute("aria-pressed", String(sure));
+  if (ent) {   // a link to one entry: open its page and its reading panel
+    const page = PAGES.find(p => p.scan === +ent[1]);
+    if (page) {
+      goToPage(page.n, false);
+      const data = await loadPage(page.n);
+      const e = data.e.find(x => x[6] === +ent[2] && x[7] === +ent[3]);
+      if (e && e[5] >= 3) { if (!sure) setSure(true); return openEntry({ page, scan: data.scan, e }); }
+      return;
+    }
+  }
   if (nm) {
     const res = await lookup(decodeURIComponent(nm[1]));
     const hit = res.find(r => fold(r[0]) === fold(decodeURIComponent(nm[1])));
