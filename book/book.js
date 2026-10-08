@@ -300,7 +300,7 @@ function layoutOf(data) {
   data.pitch = pitch;
   data.tidy = slotted.map(([x, slot]) => {
     const x0 = left + ((x[6] || 1) - 1) * colW, y0 = top + slot * pitch;
-    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.92), Math.round(y0 + h), x[4], x[5], x[6]];
+    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.92), Math.round(y0 + h), ...x.slice(4)];   // name, status, column, row, other reading, crop
   });
   return data.tidy;
 }
