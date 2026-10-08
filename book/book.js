@@ -760,7 +760,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     </form>
     <div class="tally" hidden></div>`;
   dlg.showModal();
-  dlg.querySelector(".x").onclick = () => dlg.close();
+  dlg.querySelector(".x").onclick = () => { dlg.close(); updateBar(); };
   dlg.querySelector(".askfriend").onclick = async () => {
     const url = location.origin + link, text = `Can you read this 1849 surname? Help read the Catálogo alfabético de apellidos.`;
     try {
