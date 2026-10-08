@@ -8,7 +8,7 @@ import * as THREE from "three";
 // by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROPS_V = 5;                               // bump when the strips change: they're cached for a week
+const CROPS_V = 6;                               // bump when the strips change: they're cached for a week
 // A crop's cell in the strip (px, drawn at 1.5x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD = 6;
