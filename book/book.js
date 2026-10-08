@@ -215,10 +215,10 @@ function drawText(g, side, lines, top) {
 function drawMissing(g, side, n) {
   paper(g, side);
   centred(g, `[${n}]`, 1420 * S, 30);
-  centred(g, `Page ${n} is missing`, TEX_H / 2 - 40, 54, FONT);
+  centred(g, `Page ${n}`, TEX_H / 2 - 40, 54, FONT);
   g.font = `italic 34px ${FONT}`;
-  centred(g, "from the only scan online.", TEX_H / 2 + 20, 34, `italic ${FONT}`);
-  centred(g, "Have a copy of the Catálogo, or know who does?", TEX_H / 2 + 110, 28, `italic ${FONT}`, "#6b5a45");
+  centred(g, "has no transcription yet.", TEX_H / 2 + 20, 34, `italic ${FONT}`);
+  centred(g, "Have a copy of the Catálogo, or a clear photo of this page?", TEX_H / 2 + 110, 28, `italic ${FONT}`, "#6b5a45");
   centred(g, "Tap “Help fill this page” below.", TEX_H / 2 + 152, 28, `italic ${FONT}`, "#6b5a45");
 }
 
@@ -671,14 +671,14 @@ function updateBar() {
   document.getElementById("where").textContent = text || "Catálogo";
   document.getElementById("prev").disabled = mode === "single" ? si === 0 : cur === 0;
   document.getElementById("next").disabled = mode === "single" ? si === SINGLE.length - 1 : cur === LEAVES;
-  // Help for a missing page in view.
+  // Help for a page in view with no transcription (none today: both scans cover every page).
   const gap = faces.find(k => k && k.missing);
   const help = document.getElementById("help");
   help.hidden = !gap;
   if (gap) {
     help.querySelector("b").textContent = `Page ${gap.n}`;
     help.querySelector("a").href = `mailto:hello@ruzcko.com?subject=${encodeURIComponent(`Catálogo 1849, page ${gap.n}`)}&body=${encodeURIComponent(
-      `Hi! About page ${gap.n} of the Catálogo alfabético de apellidos, which is missing from the scan:\n\n` +
+      `Hi! About page ${gap.n} of the Catálogo alfabético de apellidos, which has no transcription yet:\n\n` +
       `[ ] I have a copy (which edition? 1849 original / 1973 National Archives reprint / other)\n` +
       `[ ] I know a library or person who has one: \n[ ] I can send a photo of the page\n\n`)}`;
   }

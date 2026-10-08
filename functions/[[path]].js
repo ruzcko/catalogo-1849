@@ -21,8 +21,8 @@ export async function onRequestGet(context) {
     title = `Page ${r.n} · Catálogo 1849`;
     desc = `Leaf through page ${r.n} of the 1849 Catálogo alfabético de apellidos${first && last ? `, from ${cap(first)} to ${cap(last)}` : ""}: the book Filipino families chose their surnames from.`;
   } else if (r.kind === "missing") {
-    title = `Page ${r.n} is missing · Catálogo 1849`;
-    desc = `Page ${r.n} of the 1849 Catálogo alfabético de apellidos is missing from the only scan online. Have a copy, or know a library that does?`;
+    title = `Page ${r.n}, not yet transcribed · Catálogo 1849`;
+    desc = `Page ${r.n} of the 1849 Catálogo alfabético de apellidos has no transcription yet. Have a copy or a clear photo of it, or know a library that does?`;
   } else if (r.kind === "name") {
     q.set("w", r.word);
     title = `${cap(r.word)} · Catálogo 1849`;

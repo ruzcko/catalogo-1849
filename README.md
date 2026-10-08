@@ -94,17 +94,17 @@ For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
 Links: `/58` opens page 58; `/fabella` finds a name and marks it; `/58/glubig` opens one entry's reading help (`/58/glubig-2` for a second one on the page). The older `#p=`, `#n=` and `#e=` links still work. When `book.js` or `style.css` change, bump the `?v=` in `index.html`. Shared links get their own preview card (`functions/[[path]].js` sets the tags, `functions/og.js` draws the card in IM Fell with resvg; no scan images).
 
-**Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (the Filipinas Heritage Library's scan, one line at a time, served by Apelyido rather than kept in this repo), the OCR's raw reading, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`.
+**Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (Google's scan of the University of Michigan copy, one line at a time, served by Apelyido rather than kept in this repo), the other scan's reading, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`. The database's tables are in `schema.sql`. Votes are kept by entry position (page, column, row), so a re-layout that moves entries needs the votes remapped first.
 
 ## Licence
 
 The transcription is released under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**. You may use it for anything, including commercially, as long as you credit it, for example:
 
-> *Catálogo alfabético de apellidos (1849), open transcription by Apelyido (apelyido.ruzcko.com), from the National Archives of the Philippines' 1973 reprint as digitized by the Filipinas Heritage Library.*
+> *Catálogo alfabético de apellidos (1849), open transcription by Apelyido (apelyido.ruzcko.com), from the National Archives of the Philippines' 1973 reprint, digitized by Google from the University of Michigan's copy, with a second reading from the Filipinas Heritage Library's scan.*
 
 The underlying 1849 text is in the public domain.
 
-The code in `book/` and `tools/` is MIT-licensed (`LICENSE-CODE`). The book's typeface is IM Fell English by Igino Marini (SIL Open Font License), loaded from Google Fonts.
+The code in `book/` and `tools/` is MIT-licensed (`LICENSE-CODE`). The book's typeface is IM Fell English by Igino Marini (SIL Open Font License): the book loads it from Google Fonts, and the link-preview cards use the copies in `book/fonts`.
 
 ## Corrections
 

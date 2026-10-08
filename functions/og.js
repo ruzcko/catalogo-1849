@@ -39,7 +39,7 @@ function card({ k, n, w, page, data }) {
       <text x="84" y="380" font-size="44" font-style="italic" fill-opacity=".8">${page?.first && page?.last ? `from ${esc(cap(page.first))} to ${esc(cap(page.last))}` : ""}</text>`;
   } else if (k === "missing") {
     main = `<text x="80" y="290" font-size="140">Page ${n}</text>
-      <text x="84" y="370" font-size="46" font-style="italic">is missing from the only scan online.</text>
+      <text x="84" y="370" font-size="46" font-style="italic">has no transcription yet.</text>
       <text x="84" y="430" font-size="40" fill="${RED}">Have a copy? Help fill it.</text>`;
   } else if (k === "name") {
     const s = big(w + ".", 150, 700);
