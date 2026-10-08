@@ -4,13 +4,14 @@
 import * as THREE from "three";
 
 // ---------- Reader help ----------
-// Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
+// Scan crops of the doubtful entries (Google's scan of the University of Michigan copy, a few lines per crop), served
+// by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROPS_V = 4;                               // bump when the strips change: they're cached for a week
-// A crop's cell in the strip (px, drawn at 2x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
+const CROPS_V = 5;                               // bump when the strips change: they're cached for a week
+// A crop's cell in the strip (px, drawn at 1.5x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
-const CELL_W = 400, CELL_H = 128, LINE_Y = 32, LINE_H = 52, ACROSS = 4, CELL_PAD = 6;
+const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD = 6;
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
 const WHY = [
@@ -730,11 +731,11 @@ const dlg = document.getElementById("entry");
 async function openEntry({ page, scan, e, orig = e }) {
   const [, , , , name, status, col, row, raw, crop] = e;
   // The crop, cut to the word's width and shown as large as fits.
-  const wordW = Math.min(CELL_W, (orig[2] - orig[0] + CELL_PAD + 10) * 2);
+  const wordW = Math.min(CELL_W, (orig[2] - orig[0] + CELL_PAD + 10) * 1.5);
   const room = Math.min(innerWidth - 72, 400);
   // Just the entry's line, as large as fits; or the three lines around it, with the entry outlined.
   const cropStyle = around => {
-    const k = around ? Math.min(1, room / CELL_W) : Math.min(1.25, room / wordW);
+    const k = around ? Math.min(1.33, room / CELL_W) : Math.min(1.67, room / wordW);
     const cx = (crop % ACROSS) * CELL_W, cy = Math.floor(crop / ACROSS) * CELL_H + (around ? 0 : LINE_Y);
     return { k, css: `background-image:url('${CROPS}${scan}.webp?v=${CROPS_V}');background-size:${CELL_W * ACROSS * k}px auto;` +
       `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
@@ -746,9 +747,9 @@ async function openEntry({ page, scan, e, orig = e }) {
     <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
     <p class="why">${WHY[status]}</p>
     ${CROPS && crop != null ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
-      <figcaption>The scan, page ${page.n} · Filipinas Heritage Library · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
+      <figcaption>The scan, page ${page.n} · digitized by Google from the University of Michigan's copy · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
     <p class="small order" hidden></p>
-    ${raw ? `<p class="small">The OCR read <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
+    ${raw ? `<p class="small">The other scan reads <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
     <form class="readings" autocomplete="off">
       <p class="q">How do you read it?</p>
       <div class="opts"><p class="small">Loading…</p></div>
@@ -989,7 +990,7 @@ async function followPath(path) {
   return false;
 }
 async function follow(hash) {
-  const m = /p=(\d+)/.exec(hash), nm = /n=([^&]+)/.exec(hash), ent = /e=(\d{2,3})\.(\d{1,2})\.(\d{1,3})/.exec(hash);
+  const m = /p=(\d+)/.exec(hash), nm = /n=([^&]+)/.exec(hash), ent = /e=(\d{1,3})\.(\d{1,2})\.(\d{1,3})/.exec(hash);
   if (dlg.open) dlg.close();
   if (ent) {
     const page = PAGES.find(p => p.scan === +ent[1]);
