@@ -68,6 +68,8 @@ For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
 ## The virtual book
 
+**Open it: [catalogo-1849.ruzcko.com](https://catalogo-1849.ruzcko.com)**
+
 `book/` is a 3D book you can leaf through, with every page set in type from this transcription. It uses no scan images: each name is placed where it sits on the scanned page, and pages missing from the scan say so. It's a static site (three.js from a CDN, no build step).
 
     python tools/build_book.py           # catalogo_1849.csv -> book/data/ (pages, entries, search index)
