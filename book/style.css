@@ -104,3 +104,4 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .entry .bar span, .entry .bar b { position: relative; }
 .entry .bar.me { outline: 1px solid var(--accent); }
 .entry .small { color: var(--muted); font-size: 13px; }
+.entry .askfriend { color: var(--accent); text-decoration: underline; padding: 0; font-size: 14px; }

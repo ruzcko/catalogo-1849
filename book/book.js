@@ -283,7 +283,7 @@ function setLayout(t) {
 
 const pageData = new Map();
 async function loadPage(n) {
-  if (!pageData.has(n)) pageData.set(n, fetch(`data/p/${n}.json`).then(r => r.json()));
+  if (!pageData.has(n)) pageData.set(n, fetch(`/data/p/${n}.json`).then(r => r.json()));
   return pageData.get(n);
 }
 
@@ -574,8 +574,17 @@ function updateBar() {
       `[ ] I know a library or person who has one: \n[ ] I can send a photo of the page\n\n`)}`;
   }
   const n = kind && kind.n;
-  const hash = n ? `#p=${n}` : "";
-  if (location.hash !== hash) history.replaceState(null, "", hash || location.pathname);
+  if (!dlg.open) setPath(n ? `/${n}` : "/");
+}
+
+// Clean addresses: /58 is a page, /fabella a name, /58/glubig an entry to help read (/58/glubig-2 for a second
+// "glubig" on the same page). The address changes as you read, without adding to the back button's history.
+const setPath = path => { if (location.pathname !== path || location.hash) history.replaceState(null, "", path); };
+async function entryPath(page, e) {
+  const data = await loadPage(page.n);
+  const same = data.e.filter(x => x[4] === e[4]);
+  const k = same.findIndex(x => x[6] === e[6] && x[7] === e[7]);
+  return `/${page.n}/${encodeURIComponent(e[4])}${k > 0 ? `-${k + 1}` : ""}`;
 }
 
 // ---------- Search ----------
@@ -585,7 +594,7 @@ async function lookup(q) {
   const k = fold(q);
   if (!k) return [];
   const letter = k[0];
-  if (!searchIdx.has(letter)) searchIdx.set(letter, fetch(`data/s/${letter}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+  if (!searchIdx.has(letter)) searchIdx.set(letter, fetch(`/data/s/${letter}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})));
   const names = await searchIdx.get(letter);
   const out = [];
   for (const [name, pages] of Object.entries(names)) {
@@ -638,7 +647,7 @@ async function choose([name, pages]) {
     setTimeout(() => { view.zoom = narrow() ? 3.2 : 4; view.tx = wx; view.ty = wy; clampView(); ease(); }, reduceMotion ? 0 : 350);
   }
   if (pages.length > 1) toast(`${name} is on pages ${pages.join(", ")}`);
-  history.replaceState(null, "", `#p=${n}&n=${encodeURIComponent(name)}`);
+  setPath(`/${encodeURIComponent(name)}`);
 }
 
 let toastTimer;
@@ -731,7 +740,8 @@ async function openEntry({ page, scan, e, orig = e }) {
       `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
   };
   const id = `${scan}.${col}.${row}`;
-  history.replaceState(null, "", `#e=${id}`);
+  const link = await entryPath(page, e);
+  setPath(link);
   dlg.innerHTML = `
     <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
     <p class="why">${WHY[status]}</p>
@@ -746,10 +756,18 @@ async function openEntry({ page, scan, e, orig = e }) {
       <p class="err" role="alert"></p>
       <div class="ts"></div>
       <div class="acts"><button type="submit" class="primary">Vote</button><button type="button" class="notsure">Not sure, just show the votes</button></div>
+      <p class="small"><button type="button" class="askfriend">Ask a friend to read it</button></p>
     </form>
     <div class="tally" hidden></div>`;
   dlg.showModal();
   dlg.querySelector(".x").onclick = () => dlg.close();
+  dlg.querySelector(".askfriend").onclick = async () => {
+    const url = location.origin + link, text = `Can you read this 1849 surname? Help read the Catálogo alfabético de apellidos.`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Catálogo 1849", text, url });
+      else { await navigator.clipboard.writeText(url); toast("Link copied"); }
+    } catch {}
+  };
   const form = dlg.querySelector("form"), err = dlg.querySelector(".err");
   let res;
   try { res = await fetch(`/api/entry?id=${encodeURIComponent(id)}`).then(r => r.json()); } catch { res = null; }
@@ -944,8 +962,32 @@ window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }
   snap() { view.x = view.tx; view.y = view.ty; render(); } };
 
 // ---------- Start ----------
-// Links: #p=58 opens a page, #n=fabella finds a name and marks it, #e=100.1.6 opens one entry's reading help.
-// Followed on arrival and whenever the address's # part changes (a link clicked while the book is open).
+// Links: /58 opens a page, /fabella finds a name and marks it, /58/glubig opens one entry's reading help.
+// The older #p=58, #n=fabella and #e=100.1.6 links still work, on arrival and when they change.
+async function followPath(path) {
+  const parts = path.split("/").filter(Boolean).map(x => { try { return decodeURIComponent(x); } catch { return ""; } });
+  if (!parts.length) return false;
+  const page = /^\d{1,3}$/.test(parts[0]) ? PAGES.find(p => p.n === +parts[0]) : null;
+  if (page && parts.length === 1) { goToPage(page.n, false); return true; }
+  if (page && parts.length === 2) {   // an entry: its reading, and which one if the page has it twice
+    const [, name, k] = /^(.+?)(?:-(\d+))?$/.exec(parts[1].toLowerCase()) || [];
+    goToPage(page.n, false);
+    if (page.missing) return true;
+    const data = await loadPage(page.n);
+    const e = data.e.filter(x => x[4] === name)[(+k || 1) - 1];
+    if (e && e[5] >= 3) { if (!sure) setSure(true); openEntry({ page, scan: data.scan, e }); }
+    else if (e) { highlight = { n: page.n, name }; redrawAll(); }
+    else toast(`“${name}” isn't on page ${page.n} any more: readers may have fixed it.`);
+    return true;
+  }
+  if (parts.length === 1 && /^[\p{L} -]{2,30}$/u.test(parts[0])) {
+    const res = await lookup(parts[0]);
+    const hit = res.find(r => fold(r[0]) === fold(parts[0]));
+    if (hit) { choose(hit); return true; }
+    toast(`“${parts[0]}” isn't in our reading of the book (yet).`);
+  }
+  return false;
+}
 async function follow(hash) {
   const m = /p=(\d+)/.exec(hash), nm = /n=([^&]+)/.exec(hash), ent = /e=(\d{2,3})\.(\d{1,2})\.(\d{1,3})/.exec(hash);
   if (dlg.open) dlg.close();
@@ -968,17 +1010,18 @@ async function follow(hash) {
   return false;
 }
 addEventListener("hashchange", () => follow(location.hash));
+dlg.addEventListener("close", () => updateBar());   // back to the page's address
 
 (async () => {
   await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`)]).catch(() => {});
-  PAGES = await fetch("data/pages.json").then(r => r.json());
+  PAGES = await fetch("/data/pages.json").then(r => r.json());
   FACES = ["cover", "endpaper", "title", "about", ...PAGES];
   if (FACES.length % 2 === 1) FACES.push(null);          // the last printed page's blank back
   FACES.push("fin", null, "endpaper", "backcover");   // the back cover is the back of the last leaf
   LEAVES = FACES.length / 2;
-  const hash = location.hash;   // before resize() rewrites it
+  const hash = location.hash, path = location.pathname;   // before resize() rewrites them
   resize();
   document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
   document.getElementById("sure").setAttribute("aria-pressed", String(sure));
-  if (!(await follow(hash))) showSpread();
+  if (!(await follow(hash)) && !(await followPath(path))) showSpread();
 })();
