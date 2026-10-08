@@ -7,6 +7,7 @@ import * as THREE from "three";
 // Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
+const CROPS_V = 3;                               // bump when the strips change: they're cached for a week
 // A crop's cell in the strip (px, drawn at 2x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 400, CELL_H = 128, LINE_Y = 32, LINE_H = 52, ACROSS = 4, CELL_PAD = 6;
@@ -726,7 +727,7 @@ async function openEntry({ page, scan, e, orig = e }) {
   const cropStyle = around => {
     const k = around ? Math.min(1, room / CELL_W) : Math.min(1.25, room / wordW);
     const cx = (crop % ACROSS) * CELL_W, cy = Math.floor(crop / ACROSS) * CELL_H + (around ? 0 : LINE_Y);
-    return { k, css: `background-image:url('${CROPS}${scan}.webp');background-size:${CELL_W * ACROSS * k}px auto;` +
+    return { k, css: `background-image:url('${CROPS}${scan}.webp?v=${CROPS_V}');background-size:${CELL_W * ACROSS * k}px auto;` +
       `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
   };
   const id = `${scan}.${col}.${row}`;
