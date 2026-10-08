@@ -8,7 +8,7 @@ import * as THREE from "three";
 // by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROPS_V = 6;                               // bump when the strips change: they're cached for a week
+const CROPS_V = 7;                               // bump when the strips change: they're cached for a week
 // A crop's cell in the strip (px, drawn at 1.5x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD = 6;
@@ -43,8 +43,8 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1d1712);
-const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 50);
-// Unlit materials: the pages show their drawn colours exactly; the turning leaf is shaded by hand (see animate).
+const camera = new THREE.PerspectiveCamera(16, 1, 0.01, 80);   // a long lens: a lifted page doesn't loom
+// Unlit materials: the pages show their drawn colours exactly; the turning leaf is shaded in its shader.
 
 // A soft shadow under the book.
 const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2 * W * 1.18, H * 1.12),
@@ -64,43 +64,80 @@ const rightPage = new THREE.Mesh(new THREE.PlaneGeometry(W, H), pageMat());
 rightPage.geometry.translate(W / 2, 0, 0);
 scene.add(leftPage, rightPage);
 
-// The leaf being turned: one bendable strip, its front and back drawn as two meshes.
-const SEG = 48;
-const leafGeo = new THREE.PlaneGeometry(W, H, SEG, 1);
+// The leaf being turned: a finely divided sheet, bent on the graphics card. It turns about the spine (x = 0), from
+// angle 0 (lying on the right) to π (lying on the left). Along the sheet the angle changes by k per unit, so it bows
+// like paper (a circular arc, in closed form), and "twist" makes one corner lead, as when it's grabbed high or low.
+// Its shade comes from how the surface faces the reader: darker as it turns away, a faint sheen along the crest.
+const LEAF_VS = `
+uniform float uTheta, uK, uTwist, uHalfH, uW;
+varying vec2 vUv;
+varying float vNz;
+void main() {
+  vUv = uv;
+  float u = position.x, v = position.y;
+  float k = uK + uTwist * (v / uHalfH) / uW;
+  float a = uTheta + k * u;
+  vec3 p = abs(k) < 1e-4 ? vec3(u * cos(uTheta), v, u * sin(uTheta))
+                         : vec3((sin(a) - sin(uTheta)) / k, v, (cos(uTheta) - cos(a)) / k);
+  vNz = cos(a);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+const LEAF_FS = `
+uniform sampler2D map;
+uniform float uBack;
+varying vec2 vUv;
+varying float vNz;
+void main() {
+  vec2 uv = uBack > 0.5 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
+  float facing = uBack > 0.5 ? -vNz : vNz;
+  float shade = 0.66 + 0.34 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0);
+  gl_FragColor = vec4(texture2D(map, uv).rgb * shade, 1.0);
+  #include <colorspace_fragment>
+}`;
+const SEG_X = 72, SEG_Y = 24;
+const leafGeo = new THREE.PlaneGeometry(W, H, SEG_X, SEG_Y);
 leafGeo.translate(W / 2, 0, 0);
-const leafFront = new THREE.Mesh(leafGeo, new THREE.MeshBasicMaterial({ side: THREE.FrontSide }));
-const leafBack = new THREE.Mesh(leafGeo, new THREE.MeshBasicMaterial({ side: THREE.BackSide }));
+const bend = { uTheta: { value: 0 }, uK: { value: 0 }, uTwist: { value: 0 }, uHalfH: { value: H / 2 }, uW: { value: W } };
+const leafMat = back => new THREE.ShaderMaterial({ vertexShader: LEAF_VS, fragmentShader: LEAF_FS,
+  side: back ? THREE.BackSide : THREE.FrontSide, uniforms: { ...bend, map: { value: null }, uBack: { value: back ? 1 : 0 } } });
+const leafFront = new THREE.Mesh(leafGeo, leafMat(false));
+const leafBack = new THREE.Mesh(leafGeo, leafMat(true));
+leafFront.frustumCulled = leafBack.frustumCulled = false;   // the shader moves it; its box doesn't know
 const leaf = new THREE.Group();
 leaf.add(leafFront, leafBack);
 leaf.visible = false;
 scene.add(leaf);
 
-function bendLeaf(t, dir) {
-  // t: 0 = lying on the right, 1 = lying on the left. The free edge lags behind the spine as it turns.
-  const theta = Math.PI * t, lift = Math.sin(Math.PI * t), dx = W / SEG;
-  const X = [0], Z = [0];
-  for (let i = 1; i <= SEG; i++) {
-    const u = (i - 0.5) / SEG;
-    const a = Math.min(Math.PI, Math.max(0, theta - dir * 0.95 * lift * u * u));
-    X.push(X[i - 1] + Math.cos(a) * dx);
-    Z.push(Z[i - 1] + Math.sin(a) * dx);
-  }
-  const pos = leafGeo.attributes.position;
-  for (let k = 0; k < pos.count; k++) {
-    const i = k % (SEG + 1);
-    pos.setX(k, X[i]);
-    pos.setZ(k, Z[i]);
-  }
-  pos.needsUpdate = true;
-  leafGeo.computeVertexNormals();
+// The shadow the lifted leaf casts on the page beneath it: a soft band just beyond its edge.
+const castShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, H),
+  new THREE.MeshBasicMaterial({ map: edgeShadow(), transparent: true, depthWrite: false, opacity: 0 }));
+castShadow.visible = false;
+scene.add(castShadow);
+
+// Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back; the free edge
+// lags behind the spine. twist: -1..1, which corner leads (where it was grabbed).
+function poseLeaf(t, dir, twist = 0) {
+  const lift = Math.sin(Math.PI * t), theta = Math.PI * t, k = -dir * 0.9 * lift / W;
+  bend.uTheta.value = theta;
+  bend.uK.value = k;
+  bend.uTwist.value = 0.35 * twist * lift;
+  // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
+  const edge = Math.abs(k) < 1e-6 ? W * Math.cos(theta) : (Math.sin(theta + k * W) - Math.sin(theta)) / k;
+  const width = 0.5 * W * lift + 0.02;
+  const onRight = edge >= 0;
+  castShadow.visible = lift > 0.01;
+  castShadow.scale.x = onRight ? width : -width;
+  castShadow.position.x = onRight ? Math.min(edge, W) + width / 2 : Math.max(edge, -W) - width / 2;
+  castShadow.material.opacity = 0.5 * lift;
 }
 
 // ---------- Drawing pages ----------
 const FONT = '"IM Fell English", Georgia, serif', FONT_SC = '"IM Fell English SC", Georgia, serif';
 const INK = "#2a2017";
-const textures = new Map();                      // key "face:mirror" -> texture
-const canvases = new Map();                      // face -> canvas (drawn once, shared by both orientations)
-const order = [];                                // least recently used faces first
+const textures = new Map();                      // key "face:side" -> texture (side R: gutter on the left)
+const canvases = new Map();                      // key "face:side" -> canvas
+const order = [];                                // least recently used keys first
+const BLANK = -1;                                // the plain paper back of a page in single-page mode
 let highlight = null;                            // {n, name}: a searched entry, marked on its page
 let noise = null;
 
@@ -273,12 +310,8 @@ function setLayout(t) {
   try { localStorage.setItem("layout", t ? "tidy" : "scan"); } catch {}
   document.getElementById("layout").textContent = t ? "Tidy" : "As scanned";
   document.getElementById("layout").setAttribute("aria-pressed", String(!t));
-  for (const f of [...canvases.keys()]) {
-    canvases.delete(f);
-    for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
-  }
-  order.length = 0;
-  showSpread();
+  forget();
+  show();
   toast(t ? "Tidy: columns straightened" : "As scanned: names where they sit on the scan");
 }
 
@@ -288,18 +321,31 @@ async function loadPage(n) {
   return pageData.get(n);
 }
 
-function faceCanvas(f) {
-  if (canvases.has(f)) return canvases.get(f);
+function faceCanvas(f, side) {
+  const key = `${f}:${side}`;
+  if (canvases.has(key)) return canvases.get(key);
   const c = document.createElement("canvas");
   c.width = TEX_W;
   c.height = TEX_H;
-  canvases.set(f, c);
-  drawFace(f, c);
+  canvases.set(key, c);
+  drawFace(f, c, side);
   return c;
 }
 
-function drawFace(f, c) {
-  const g = c.getContext("2d"), side = f % 2 === 0 ? "R" : "L", kind = FACES[f];
+// Forget drawn pages (all, or one face), so they're drawn afresh: after a layout change, a search mark, "How sure?".
+function forget(f) {
+  for (const key of [...canvases.keys()]) {
+    if (f != null && !key.startsWith(`${f}:`)) continue;
+    canvases.delete(key);
+    textures.get(key)?.dispose();
+    textures.delete(key);
+    const i = order.indexOf(key);
+    if (i >= 0) order.splice(i, 1);
+  }
+}
+
+function drawFace(f, c, side) {
+  const g = c.getContext("2d"), kind = f === BLANK ? null : FACES[f];
   if (kind === "cover") drawCover(g, false);
   else if (kind === "backcover") drawCover(g, true);
   else if (kind === "endpaper") paper(g, side, "#d9c9a6");
@@ -311,10 +357,10 @@ function drawFace(f, c) {
     ["THIS EDITION", 44, FONT_SC, 90],
     ["Every page here is set in type from a machine-read", 30, FONT, 44],
     ["transcription of the National Archives of the", 30, FONT, 44],
-    ["Philippines' 1973 reprint, as digitized by the", 30, FONT, 44],
-    ["Filipinas Heritage Library. Each name keeps its", 30, FONT, 44],
-    ["column and line from the scan; some readings are", 30, FONT, 44],
-    ["uncertain, and a few pages are missing.", 30, FONT, 120],
+    ["Philippines' 1973 reprint, read from two scans:", 30, FONT, 44],
+    ["Google's (University of Michigan copy) and the", 30, FONT, 44],
+    ["Filipinas Heritage Library's. Each name keeps its", 30, FONT, 44],
+    ["column and line; some readings are uncertain.", 30, FONT, 120],
     ["The 1849 text is in the public domain.", 28, `italic ${FONT}`, 44],
     ["Transcription CC BY 4.0 · apelyido.ruzcko.com", 26, FONT, 0]], 560);
   else if (kind === "fin") drawText(g, side, [["FIN.", 64, FONT_SC, 120],
@@ -323,136 +369,201 @@ function drawFace(f, c) {
   else if (kind && kind.missing) drawMissing(g, side, kind.n);
   else if (kind) {
     paper(g, side);
-    loadPage(kind.n).then(data => { drawPrinted(g, side, kind, data); refreshFace(f); });
+    loadPage(kind.n).then(data => { drawPrinted(g, side, kind, data); refreshFace(f, side); });
   } else paper(g, side);
 }
 
-function refreshFace(f) {
-  for (const m of [false, true]) {
-    const t = textures.get(`${f}:${m}`);
-    if (t) t.needsUpdate = true;
-  }
+function refreshFace(f, side) {
+  const t = textures.get(`${f}:${side}`);
+  if (t) t.needsUpdate = true;
   render();
 }
 
-function texture(f, mirror = false) {
-  const key = `${f}:${mirror}`;
+function texture(f, side) {
+  const key = `${f}:${side}`;
   if (!textures.has(key)) {
-    const t = new THREE.CanvasTexture(faceCanvas(f));
+    const t = new THREE.CanvasTexture(faceCanvas(f, side));
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    if (mirror) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; }
     textures.set(key, t);
   }
-  const i = order.indexOf(f);
+  const i = order.indexOf(key);
   if (i >= 0) order.splice(i, 1);
-  order.push(f);
+  order.push(key);
   while (order.length > 12) {                     // keep a dozen pages in memory
     const old = order.shift();
     canvases.delete(old);
-    for (const m of [false, true]) { textures.get(`${old}:${m}`)?.dispose(); textures.delete(`${old}:${m}`); }
+    textures.get(old)?.dispose();
+    textures.delete(old);
   }
   return textures.get(key);
 }
 
-function setMap(mesh, f, mirror) {
-  mesh.visible = f >= 0 && f < FACES.length;
+// Show face f (drawn for side "R" or "L") on a mesh, or hide the mesh if there's no such face.
+function setMap(mesh, f, side) {
+  mesh.visible = f === BLANK || (f >= 0 && f < FACES.length);
   if (!mesh.visible) return;
-  mesh.material.map = texture(f, mirror);
-  mesh.material.needsUpdate = true;
+  const tex = texture(f, side);
+  if (mesh.material.uniforms) mesh.material.uniforms.map.value = tex;
+  else { mesh.material.map = tex; mesh.material.needsUpdate = true; }
 }
 
-// ---------- The open spread ----------
-let cur = 0;                 // leaves turned so far: the left page is face 2cur-1, the right page face 2cur
-let side = "R";              // on narrow screens, which page of the spread is in view
-let turning = null;          // {from, to, start, dur, dir}
+// ---------- What's open: a spread (wide screens) or one page (narrow) ----------
+// Wide screens show the open book: the left page is face 2cur-1, the right page face 2cur. Narrow screens show one
+// page at a time, never panning: the page turns away over the spine to reveal the next (SINGLE[si]).
+let mode = "spread";
+let cur = 0;                 // spread: leaves turned so far
+let SINGLE = [], si = 0;     // single: the faces shown one by one (no blank backs or endpapers), and which is open
+let T = null;                // the turn in progress: {dir, t, twist, from, done, anim}
+const wantMode = () => (innerWidth / innerHeight < 0.95 ? "single" : "spread");
+const sideOf = f => (mode === "single" ? "R" : f % 2 === 0 ? "R" : "L");
+
+// The faces in view, each with the x where its page starts.
+function inView() {
+  if (mode === "single") return [{ f: SINGLE[si], x0: 0 }];
+  return [{ f: 2 * cur - 1, x0: -W }, { f: 2 * cur, x0: 0 }].filter(v => v.f >= 0 && v.f < FACES.length && FACES[v.f] != null);
+}
+function visibleFace() {
+  const v = inView();
+  return (v.find(x => x.x0 === 0) || v[0] || { f: 0 }).f;
+}
+// Switch mode (on a resize), keeping the same page open.
+function setMode(m) {
+  if (m === mode) return false;
+  const f = visibleFace();
+  mode = m;
+  if (m === "single") si = Math.max(0, SINGLE.indexOf(f) >= 0 ? SINGLE.indexOf(f) : SINGLE.findIndex(x => x >= f));
+  else cur = f % 2 === 0 ? f / 2 : (f + 1) / 2;
+  forget();
+  return true;
+}
 
 function place() {
-  const leftZ = cur * LEAF, rightZ = (LEAVES - cur) * LEAF;
-  stackL.visible = cur > 0;
-  stackR.visible = cur < LEAVES;
+  const left = mode === "single" ? 0 : cur, right = mode === "single" ? SINGLE.length - si : LEAVES - cur;
+  const leftZ = left * LEAF, rightZ = right * LEAF;
+  stackL.visible = mode === "spread" && cur > 0;
+  stackR.visible = right > 0;
   stackL.scale.z = Math.max(leftZ, 1e-4); stackL.position.set(-W / 2, 0, leftZ / 2 - LEAF);
   stackR.scale.z = Math.max(rightZ, 1e-4); stackR.position.set(W / 2, 0, rightZ / 2 - LEAF);
   leftPage.position.z = leftZ;
   rightPage.position.z = rightZ;
-  const closed = cur === 0 || cur === LEAVES;
-  shadow.scale.x = closed ? 0.55 : 1;
-  shadow.position.x = cur === 0 ? W / 2 : cur === LEAVES ? -W / 2 : 0;
+  castShadow.position.z = Math.max(leftZ, rightZ) + 0.001;
+  const alone = mode === "single" || cur === 0 || cur === LEAVES;
+  shadow.scale.x = alone ? 0.55 : 1;
+  shadow.position.x = mode === "single" || cur === 0 ? W / 2 : cur === LEAVES ? -W / 2 : 0;
 }
 
-function showSpread() {
-  setMap(leftPage, 2 * cur - 1, false);
-  setMap(rightPage, 2 * cur, false);
+function show() {
+  if (mode === "single") {
+    leftPage.visible = false;
+    setMap(rightPage, SINGLE[si], "R");
+  } else {
+    setMap(leftPage, 2 * cur - 1, "L");
+    setMap(rightPage, 2 * cur, "R");
+  }
   place();
   prefetch();
   updateBar();
   render();
 }
+const showSpread = show;
 
 function prefetch() {
-  for (const f of [2 * cur + 1, 2 * cur + 2, 2 * cur - 2, 2 * cur - 3]) {
+  const faces = mode === "single" ? [SINGLE[si + 1], SINGLE[si - 1]] : [2 * cur + 1, 2 * cur + 2, 2 * cur - 2, 2 * cur - 3];
+  for (const f of faces) {
     const kind = FACES[f];
     if (kind && kind.n && !kind.missing) loadPage(kind.n);
   }
 }
 
-function turn(dir) {
-  if (turning) return finishTurn();
-  const to = cur + dir;
-  if (to < 0 || to > LEAVES) return;
-  const l = dir > 0 ? cur : cur - 1;              // the leaf that moves
-  setMap(leafFront, 2 * l, false);
-  setMap(leafBack, 2 * l + 1, true);
-  if (dir > 0) setMap(rightPage, 2 * cur + 2, false); else setMap(leftPage, 2 * cur - 3, false);
+// Start turning one leaf (dir +1 forward, -1 back): set up what's on the leaf and what's revealed beneath it.
+function startTurn(dir) {
+  if (mode === "single") {
+    if (dir > 0 ? si >= SINGLE.length - 1 : si <= 0) return null;
+    setMap(leafFront, dir > 0 ? SINGLE[si] : SINGLE[si - 1], "R");
+    setMap(leafBack, BLANK, "R");
+    if (dir > 0) setMap(rightPage, SINGLE[si + 1], "R");
+  } else {
+    if (dir > 0 ? cur >= LEAVES : cur <= 0) return null;
+    const l = dir > 0 ? cur : cur - 1;              // the leaf that moves
+    setMap(leafFront, 2 * l, "R");
+    setMap(leafBack, 2 * l + 1, "L");
+    if (dir > 0) setMap(rightPage, 2 * cur + 2, "R"); else setMap(leftPage, 2 * cur - 3, "L");
+  }
   leaf.visible = true;
-  turning = { from: cur, to, dir, start: performance.now(), dur: reduceMotion ? 0 : 750 };
-  animate();
+  T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null };
+  drawTurn();
+  return T;
 }
 
-function finishTurn() {
-  if (!turning) return;
-  cur = turning.to;
-  turning = null;
+function drawTurn() {
+  poseLeaf(T.t, T.dir, T.twist);
+  const right = mode === "single" ? SINGLE.length - si : LEAVES - cur, left = mode === "single" ? 0 : cur;
+  const zR = right * LEAF, zL = left * LEAF;
+  leaf.position.z = zR + (zL - zR) * T.t + 0.003;
+  leaf.scale.z = mode === "single" ? 0.55 : 0.8;   // a flatter lift: the page turns low over the book, as a real one does
+  render();
+}
+
+// Animate the turn to its end (goal 1 = lying on the left) or back where it started. Full turns ease in and out;
+// a release mid-drag eases out from where the finger left it.
+function settle(goal, fromDrag = false) {
+  if (!T) return;
+  const from = T.t, dist = Math.abs(goal - from);
+  T.anim = { from, goal, start: performance.now(), dur: reduceMotion ? 0 : Math.max(140, (fromDrag ? 520 : 820) * dist), fromDrag };
+  requestAnimationFrame(stepTurn);
+}
+function stepTurn() {
+  if (!T || !T.anim) return;
+  const a = T.anim, k = Math.min(1, (performance.now() - a.start) / (a.dur || 1));
+  const e = a.fromDrag ? 1 - Math.pow(1 - k, 3) : (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+  T.t = a.from + (a.goal - a.from) * e;
+  T.twist *= a.fromDrag ? 0.94 : 1;
+  drawTurn();
+  if (k < 1) requestAnimationFrame(stepTurn); else endTurn();
+}
+function endTurn() {
+  if (!T) return;
+  const completed = T.dir > 0 ? T.t >= 0.999 : T.t <= 0.001;
+  const dir = T.dir;
+  T = null;
   leaf.visible = false;
-  if (narrow()) side = cur === 0 ? "R" : cur === LEAVES ? "L" : side;
-  showSpread();
+  castShadow.visible = false;
+  if (completed) { if (mode === "single") si += dir; else cur += dir; }
+  show();
   frame();
 }
-
-function animate() {
-  if (!turning) return;
-  const k = Math.min(1, (performance.now() - turning.start) / (turning.dur || 1));
-  const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-  const t = turning.dir > 0 ? e : 1 - e;
-  bendLeaf(t, turning.dir);
-  // Shade the leaf as it lifts: the front darkens as it turns away, the back brightens as it lands.
-  const lift = Math.sin(Math.PI * t);
-  leafFront.material.color.setScalar(1 - 0.35 * t - 0.1 * lift);
-  leafBack.material.color.setScalar(0.65 + 0.35 * t - 0.1 * lift);
-  const zR = (LEAVES - turning.from) * LEAF, zL = turning.from * LEAF;
-  leaf.position.z = zR + (zL - zR) * t + 0.002;
-  render();
-  if (k < 1) requestAnimationFrame(animate); else finishTurn();
+const finishTurn = () => { if (T) { T.t = T.dir > 0 ? 1 : 0; endTurn(); } };
+// A whole turn, as from the arrows or a tap.
+function turn(dir) {
+  if (T) finishTurn();
+  if (startTurn(dir)) settle(dir > 0 ? 1 : 0);
 }
 
 // ---------- Camera: fit, zoom and pan ----------
-const view = { zoom: 1, x: 0, y: 0, tx: 0, ty: 0 };   // x, y: centre of view; tx, ty: where the camera eases to
-const narrow = () => innerWidth / innerHeight < 0.95;
+const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0 };   // x, y, zoom: now; tx, ty, tz: where the camera eases to
+const narrow = () => mode === "single";
 const TOP = () => document.querySelector(".bar.top").offsetHeight, BOT = () => document.querySelector(".bar.bottom").offsetHeight;
 
+// The part of the book in view: one page (single mode, or the closed book), or the spread.
+function span() {
+  if (mode === "single" || cur === 0) return [0, W];
+  if (cur === LEAVES) return [-W, 0];
+  return [-W, W];
+}
+
 function frame() {
-  // The default view: the spread, or on a narrow screen the page in view (the cover and back cover alone).
-  view.zoom = 1;
-  const single = narrow() || cur === 0 || cur === LEAVES;
-  const s = cur === 0 ? "R" : cur === LEAVES ? "L" : side;
-  view.tx = single ? (s === "R" ? W / 2 : -W / 2) : 0;
+  // The default view: what's open, whole (zooming out smoothly if zoomed in).
+  view.tz = 1;
+  const [x0, x1] = span();
+  view.tx = (x0 + x1) / 2;
   view.ty = 0;
   ease();
 }
 
 function fitDistance() {
-  const single = narrow() || cur === 0 || cur === LEAVES;
-  const vw = (single ? W : 2 * W) * 1.06, vh = H * 1.04;
+  const [x0, x1] = span();
+  const vw = (x1 - x0) * (mode === "single" ? 1.04 : 1.06), vh = H * 1.04;
   const usable = (innerHeight - TOP() - BOT()) / innerHeight;
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect));
@@ -473,20 +584,20 @@ function ease() {
   if (easing) return;
   easing = true;
   const step = () => {
-    view.x += (view.tx - view.x) * (reduceMotion ? 1 : 0.18);
-    view.y += (view.ty - view.y) * (reduceMotion ? 1 : 0.18);
+    const k = reduceMotion ? 1 : 0.18;
+    view.x += (view.tx - view.x) * k;
+    view.y += (view.ty - view.y) * k;
+    view.zoom += (view.tz - view.zoom) * k;
     render();
-    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) > 1e-4) requestAnimationFrame(step);
-    else { view.x = view.tx; view.y = view.ty; easing = false; render(); }
+    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) > 1e-4) requestAnimationFrame(step);
+    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; easing = false; render(); }
   };
   step();
 }
 
 function clampView() {
-  // Keep the view on the pages: what's in view is the page in view (narrow screens, cover) or the spread.
-  const single = narrow() || cur === 0 || cur === LEAVES;
-  const s = cur === 0 ? "R" : cur === LEAVES ? "L" : side;
-  const [x0, x1] = single ? (s === "R" ? [0, W] : [-W, 0]) : [-W, W];
+  // Keep the view on the pages in view.
+  const [x0, x1] = span();
   const d = fitDistance() / view.zoom, tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const halfW = d * tan * camera.aspect, halfH = d * tan * (innerHeight - TOP() - BOT()) / innerHeight;
   const fit = (v, a, b, half) => (b - a <= 2 * half ? (a + b) / 2 : Math.max(a + half, Math.min(b - half, v)));
@@ -494,9 +605,17 @@ function clampView() {
   view.ty = fit(view.ty, -H / 2, H / 2, halfH);
 }
 
+// Zoom in on a point, smoothly (a double tap, a search) or at once (pinch, wheel, keys).
+function glideTo(z, wx, wy) {
+  view.tz = Math.max(1, Math.min(6, z));
+  view.tx = wx; view.ty = wy;
+  const keep = view.zoom;
+  view.zoom = view.tz; clampView(); view.zoom = keep;   // clamp for where it's going
+  ease();
+}
 function zoomTo(z, wx, wy) {
   const old = view.zoom;
-  view.zoom = Math.max(1, Math.min(6, z));
+  view.zoom = view.tz = Math.max(1, Math.min(6, z));
   if (wx != null) {   // keep the point under the finger where it is
     view.tx = wx - (wx - view.tx) * old / view.zoom;
     view.ty = wy - (wy - view.ty) * old / view.zoom;
@@ -508,6 +627,8 @@ function zoomTo(z, wx, wy) {
 }
 
 function worldAt(px, py) {
+  applyCamera();
+  camera.updateMatrixWorld();   // the camera as it is now, even if no frame has been drawn since it moved
   const ndc = new THREE.Vector2((px / innerWidth) * 2 - 1, -(py / innerHeight) * 2 + 1);
   const ray = new THREE.Raycaster();
   ray.setFromCamera(ndc, camera);
@@ -517,54 +638,41 @@ function worldAt(px, py) {
 }
 
 // ---------- Navigation ----------
-function next() {
-  if (turning) return finishTurn();
-  if (narrow() && side === "L" && cur > 0 && cur < LEAVES) { side = "R"; return frame(), updateBar(); }
-  if (cur < LEAVES) { side = "L"; turn(1); }
-}
-function prev() {
-  if (turning) return finishTurn();
-  if (narrow() && side === "R" && cur > 0 && cur < LEAVES) { side = "L"; return frame(), updateBar(); }
-  if (cur > 0) { side = "R"; turn(-1); }
-}
+function next() { turn(1); }
+function prev() { turn(-1); }
 
 function goToFace(f, animateTurn = true) {
-  const target = f % 2 === 0 ? f / 2 : (f + 1) / 2;
-  side = f % 2 === 0 ? "R" : "L";
-  if (target === cur) return frame(), showSpread();
-  if (animateTurn && !reduceMotion && Math.abs(target - cur) > 0) {
-    cur = target - Math.sign(target - cur);
-    showSpread();
-    turn(Math.sign(target - (cur)) || 1);
+  if (T) finishTurn();
+  if (mode === "single") {
+    let i = SINGLE.indexOf(f);
+    if (i < 0) i = Math.max(0, SINGLE.findIndex(x => x >= f));
+    if (i === si) return frame(), show();
+    if (animateTurn && !reduceMotion) { si = i - Math.sign(i - si); show(); return turn(Math.sign(i - si)); }
+    si = i;
   } else {
+    const target = f % 2 === 0 ? f / 2 : (f + 1) / 2;
+    if (target === cur) return frame(), show();
+    if (animateTurn && !reduceMotion) { cur = target - Math.sign(target - cur); show(); return turn(Math.sign(target - cur)); }
     cur = target;
-    showSpread();
-    frame();
   }
+  show();
+  frame();
 }
 const goToPage = (n, anim) => { const f = faceOfPage(n); if (f >= FRONT) goToFace(f, anim); };
 
-function visibleFace() {
-  if (cur === 0) return 0;
-  if (cur === LEAVES) return 2 * LEAVES - 1;
-  return narrow() ? (side === "R" ? 2 * cur : 2 * cur - 1) : 2 * cur;
-}
-
 function updateBar() {
-  const f = visibleFace(), kind = FACES[f];
+  const f = visibleFace(), kind = FACES[f], faces = inView().map(v => FACES[v.f]);
   const label = k => k && k.n ? `p. ${k.n}${k.letter ? ` · ${k.letter}` : ""}` : null;
-  let text;
-  if (narrow() || cur === 0 || cur === LEAVES) text = label(kind) || ({ cover: "Cover", backcover: "Back cover", title: "Title page", about: "This edition", fin: "Fin", endpaper: "" })[kind] || "";
-  else {
-    const l = label(FACES[2 * cur - 1]), r = label(FACES[2 * cur]);
-    text = l && r ? `pp. ${FACES[2 * cur - 1].n}–${FACES[2 * cur].n}${FACES[2 * cur].letter ? ` · ${FACES[2 * cur].letter}` : ""}` : l || r || "";
-  }
+  const named = { cover: "Cover", backcover: "Back cover", title: "Title page", about: "This edition", fin: "Fin", endpaper: "" };
+  const printed = faces.filter(k => k && k.n);
+  const text = printed.length === 2
+    ? `pp. ${printed[0].n}–${printed[1].n}${printed[1].letter ? ` · ${printed[1].letter}` : ""}`
+    : label(printed[0]) || named[kind] || "";
   document.getElementById("where").textContent = text || "Catálogo";
-  document.getElementById("prev").disabled = cur === 0 && side === "R";
-  document.getElementById("next").disabled = cur === LEAVES;
+  document.getElementById("prev").disabled = mode === "single" ? si === 0 : cur === 0;
+  document.getElementById("next").disabled = mode === "single" ? si === SINGLE.length - 1 : cur === LEAVES;
   // Help for a missing page in view.
-  const inView = narrow() || cur === 0 || cur === LEAVES ? [kind] : [FACES[2 * cur - 1], FACES[2 * cur]];
-  const gap = inView.find(k => k && k.missing);
+  const gap = faces.find(k => k && k.missing);
   const help = document.getElementById("help");
   help.hidden = !gap;
   if (gap) {
@@ -637,15 +745,14 @@ async function choose([name, pages]) {
   highlight = { n, name };
   const f = faceOfPage(n);
   // Redraw the page with the name marked, then go there and zoom in on it.
-  canvases.delete(f);
-  for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
+  forget(f);
   goToPage(n, false);
   const data = await loadPage(n);
   const e = layoutOf(data).find(x => x[4] === name);
   if (e) {
-    const pageX = f % 2 === 0 ? 0 : -W;
+    const pageX = (inView().find(v => v.f === f) || { x0: 0 }).x0;
     const wx = pageX + ((e[0] + e[2]) / 2 / SCAN_W) * W, wy = H / 2 - ((e[1] + e[3]) / 2 / SCAN_H) * H;
-    setTimeout(() => { view.zoom = narrow() ? 3.2 : 4; view.tx = wx; view.ty = wy; clampView(); ease(); }, reduceMotion ? 0 : 350);
+    setTimeout(() => glideTo(narrow() ? 3.2 : 4, wx, wy), reduceMotion ? 0 : 350);
   }
   if (pages.length > 1) toast(`${name} is on pages ${pages.join(", ")}`);
   setPath(`/${encodeURIComponent(name)}`);
@@ -664,12 +771,8 @@ function toast(text) {
 let sure = false;
 try { sure = localStorage.getItem("sure") === "1"; } catch {}
 function redrawAll() {
-  for (const f of [...canvases.keys()]) {
-    canvases.delete(f);
-    for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
-  }
-  order.length = 0;
-  showSpread();
+  forget();
+  show();
 }
 function setSure(on) {
   sure = on;
@@ -691,12 +794,12 @@ const voted = id => { try { return localStorage.getItem(`voted:${id}`); } catch 
 
 // The entry under a tap, if any: which page was hit, and which name's box (in the current layout).
 async function entryAt(px, py) {
-  if (turning || cur === 0 || cur === LEAVES) return null;
+  if (T) return null;
   const p = worldAt(px, py);
-  const right = p.x >= 0, f = right ? 2 * cur : 2 * cur - 1, kind = FACES[f];
+  const hitPage = inView().find(v => p.x >= v.x0 && p.x <= v.x0 + W);
+  const kind = hitPage && FACES[hitPage.f];
   if (!kind || !kind.n || kind.missing) return null;
-  if (narrow() && (right ? "R" : "L") !== side) return null;
-  const sx = ((p.x - (right ? 0 : -W)) / W) * SCAN_W, sy = ((H / 2 - p.y) / H) * SCAN_H;
+  const sx = ((p.x - hitPage.x0) / W) * SCAN_W, sy = ((H / 2 - p.y) / H) * SCAN_H;
   const data = await loadPage(kind.n);
   let best = null, bestD = Infinity;
   for (const e of layoutOf(data)) {
@@ -842,13 +945,15 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const pointers = new Map();
 let drag = null, lastTap = 0, pinch = null;
 canvas.addEventListener("pointerdown", e => {
-  canvas.setPointerCapture(e.pointerId);
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
     pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), zoom: view.zoom, mid: worldAt((a.x + b.x) / 2, (a.y + b.y) / 2) };
+    if (drag?.turning && T) settle(T.dir > 0 ? 0 : 1, true);   // a second finger: let the page fall back
     drag = null;
-  } else drag = { x: e.clientX, y: e.clientY, vx: view.tx, vy: view.ty, moved: false, t: performance.now() };
+  } else drag = { x: e.clientX, y: e.clientY, vx: view.tx, vy: view.ty, moved: false, t: performance.now(),
+                  w: worldAt(e.clientX, e.clientY), turning: false, trail: [] };
 });
 canvas.addEventListener("pointermove", e => {
   if (!pointers.has(e.pointerId)) return;
@@ -868,6 +973,23 @@ canvas.addEventListener("pointermove", e => {
     clampView();
     view.x = view.tx; view.y = view.ty;
     render();
+    return;
+  }
+  // Not zoomed: a sideways drag turns the page, following the finger.
+  if (!drag.turning && drag.moved && Math.abs(dx) > Math.abs(dy) * 1.2) {
+    if (T) finishTurn();
+    if (!startTurn(dx < 0 ? 1 : -1)) { drag = null; return; }
+    drag.turning = true;
+    drag.t0 = T.t;
+    T.twist = Math.max(-1, Math.min(1, drag.w.y / (H / 2))) * (T.dir > 0 ? 1 : -1);   // grabbed high or low
+  }
+  if (drag.turning && T) {
+    const w = worldAt(e.clientX, e.clientY);
+    const reach = mode === "single" ? 1.7 * W : 2 * W;   // how far the finger travels for a whole turn
+    T.t = Math.max(0, Math.min(1, drag.t0 + (drag.w.x - w.x) / reach));
+    drag.trail.push([performance.now(), e.clientX]);
+    if (drag.trail.length > 6) drag.trail.shift();
+    drawTurn();
   }
 });
 const up = e => {
@@ -875,13 +997,22 @@ const up = e => {
   canvas.classList.remove("dragging");
   if (pinch) { if (pointers.size < 2) pinch = null; drag = null; return; }
   if (!drag) return;
-  const dx = e.clientX - drag.x;
-  if (drag.moved && view.zoom <= 1.05 && Math.abs(dx) > 40) (dx < 0 ? next : prev)();
-  else if (!drag.moved) {
+  if (drag.turning && T) {
+    // Let go: finish the turn if it's past halfway or was flicked, otherwise let the page fall back.
+    const [t0, x0] = drag.trail[0] || [0, e.clientX], [t1, x1] = drag.trail[drag.trail.length - 1] || [1, e.clientX];
+    const v = (x1 - x0) / Math.max(1, t1 - t0);     // px per ms; negative: towards the left
+    const flick = T.dir > 0 ? v < -0.45 : v > 0.45, back = T.dir > 0 ? v > 0.45 : v < -0.45;
+    const past = T.dir > 0 ? T.t > 0.42 : T.t < 0.58;
+    const done = !back && (flick || past);
+    settle(done === (T.dir > 0) ? 1 : 0, true);
+    drag = null;
+    return;
+  }
+  if (!drag.moved) {
     const now = performance.now();
     if (now - lastTap < 300) {
       const p = worldAt(e.clientX, e.clientY);
-      if (view.zoom > 1.05) frame(); else zoomTo(narrow() ? 3 : 3.5, p.x, p.y);
+      if (view.zoom > 1.05) frame(); else glideTo(narrow() ? 3 : 3.5, p.x, p.y);
       lastTap = 0;
     } else {
       lastTap = now;
@@ -942,6 +1073,7 @@ function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  if (FACES.length && setMode(wantMode())) { if (T) finishTurn(); show(); }
   frame();
   updateBar();
 }
@@ -958,8 +1090,23 @@ function radialShadow() {
   return new THREE.CanvasTexture(c);
 }
 
+function edgeShadow() {
+  const c = document.createElement("canvas"), g = c.getContext("2d");
+  c.width = 256; c.height = 4;
+  const r = g.createLinearGradient(0, 0, 256, 0);
+  r.addColorStop(0, "rgba(40,25,10,.9)");
+  r.addColorStop(0.35, "rgba(40,25,10,.35)");
+  r.addColorStop(1, "rgba(40,25,10,0)");
+  g.fillStyle = r;
+  g.fillRect(0, 0, 256, 4);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 // For checking in the browser console.
-window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }, get side() { return side; }, goToPage, next, prev, render,
+window.__book = { view, scene, shadow, leaf, poseLeaf, startTurn, settle, get T() { return T; }, get mode() { return mode; },
+  get cur() { return cur; }, get si() { return si; }, goToPage, next, prev, render,
   snap() { view.x = view.tx; view.y = view.ty; render(); } };
 
 // ---------- Start ----------
@@ -1020,6 +1167,8 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   if (FACES.length % 2 === 1) FACES.push(null);          // the last printed page's blank back
   FACES.push("fin", null, "endpaper", "backcover");   // the back cover is the back of the last leaf
   LEAVES = FACES.length / 2;
+  SINGLE = FACES.map((k, f) => f).filter(f => FACES[f] != null && FACES[f] !== "endpaper");
+  mode = wantMode();
   const hash = location.hash, path = location.pathname;   // before resize() rewrites them
   resize();
   document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
