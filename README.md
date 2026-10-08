@@ -96,6 +96,21 @@ Links: `/58` opens page 58; `/fabella` finds a name and marks it; `/58/glubig` o
 
 **Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (Google's scan of the University of Michigan copy, one line at a time, served by Apelyido rather than kept in this repo), the other scan's reading, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`. The database's tables are in `schema.sql`. Votes are kept by entry position (page, column, row), so a re-layout that moves entries needs the votes remapped first.
 
+### Reviewing reader votes
+
+`tools/review_votes.py` is how votes reach the dataset: a person looks at each one first. It reads an export of the vote database (readings and per-day counts, never who voted) and opens a review page on your own machine: for each entry whose leading reading isn't ours and has at least two votes (`--min-votes`), the scan crop, our reading and both scans', every reading with its votes, the entry's neighbours in the book's order, and what the book's rules (`lib/readings.js`, the same code the vote server runs) say about each. Keys: `a` accept, `e` edit, `r` reject, `s` skip. Decisions are saved in `review/votes/` (not in git), so a reviewed entry doesn't come back; accepted readings go to `review/votes/corrections.csv`, in the format of Apelyido's corrections file. `tools/votes.example.json` is a made-up export to try it on.
+
+    python tools/review_votes.py votes.json
+
+The order, from votes to the published book:
+
+1. **Export** the votes from the D1 database (readings and per-day voter counts only).
+2. **Review** them with `tools/review_votes.py`.
+3. **Hand** `corrections.csv` to the Apelyido pipeline, which adds it to its `data/catalogo/corrections.csv` and rebuilds the dataset. This tool never changes the dataset itself.
+4. **Merge** there, then run its sync check: if entries moved to other columns or rows, remap the votes first (they're kept by position).
+5. **Rebuild both:** copy the new `catalogo_1849.csv` here, run `tools/build_book.py`, and let Apelyido rebuild the crop strips in a new `/scan/<version>/` folder (bump `CROPS_V` and the `?v=` in `index.html`).
+6. **Deploy in lockstep:** Apelyido first (its new crops), then this book.
+
 ## Licence
 
 The transcription is released under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**. You may use it for anything, including commercially, as long as you credit it, for example:

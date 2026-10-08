@@ -1,0 +1,22 @@
+{
+ "note": "A made-up export for trying review_votes.py: these votes were never cast.",
+ "exported": "2026-10-09",
+ "readings": [
+  {"entry": "58.1.6", "reading": "glubig", "votes": 1, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "58.1.6", "reading": "girbig", "votes": 1, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "58.1.6", "reading": "glubiq", "votes": 3, "typed": 2, "first_day": "2026-10-09"},
+  {"entry": "61.5.2", "reading": "layan", "votes": 4, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "61.5.2", "reading": "gayan", "votes": 1, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "2.5.31", "reading": "agaban", "votes": 2, "typed": 2, "first_day": "2026-10-09"},
+  {"entry": "125.1.33", "reading": "tewan", "votes": 2, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "125.1.33", "reading": "trans", "votes": 1, "typed": 0, "first_day": "2026-10-09"},
+  {"entry": "46.1.3", "reading": "ezcabo", "votes": 1, "typed": 1, "first_day": "2026-10-09"},
+  {"entry": "999.1.1", "reading": "nowhere", "votes": 2, "typed": 2, "first_day": "2026-10-09"}
+ ],
+ "days": [
+  {"entry": "58.1.6", "day": "2026-10-09", "voters": 5},
+  {"entry": "61.5.2", "day": "2026-10-09", "voters": 5},
+  {"entry": "2.5.31", "day": "2026-10-09", "voters": 2},
+  {"entry": "125.1.33", "day": "2026-10-09", "voters": 3}
+ ]
+}
