@@ -2,15 +2,16 @@
 
 A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
 
-**At a glance:** 53,331 entries from all 140 name-list pages (updated 8 October 2026):
+**At a glance:** 53,331 entries from the 141 name-list pages (updated 8 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
-| `sure` | 13,128 |
-| `likely` | 27,032 |
-| `best_effort` | 9,525 |
-| `low` | 2,854 |
+| `checked` (corrected from a source) | 1 |
+| `sure` | 13,324 |
+| `likely` | 27,332 |
+| `best_effort` | 9,084 |
+| `low` | 2,797 |
 
 A few scanned pages near the end carry no readable page number, so their `book_page` is empty. The Issuu scan skips a handful of pages, so a few short alphabetical stretches are missing.
 
@@ -33,6 +34,10 @@ The book is alphabetical on the **first three letters** of each name: on the han
 
 `ocr_raw` always keeps what the OCR actually read.
 
+The order follows the book's own alphabet, the Spanish of 1849: **Ll is a letter of its own after L** (its section follows L), ñ comes after n, and accents don't count. In the Ll section the old type's "ll" often comes out of the OCR as "h", "li", "il" or "in" (*llamas* read as *hamas*); those are put back. There are no I, K, W or X sections, though a few I and K names sit among the Y and Q ones.
+
+**A check against a published count.** Todd Sales Lucero's "Ten things to know about the Catálogo" (*The Freeman*, 15 November 2023) counts 141 pages of names, six columns of 72 names (432 on a full page), about 53,517 names legible with certainty, 113 Ll names and 14 I names, and gives the first name as AACAIN and the last as ZURRAR. This transcription has 53,331 entries, 432 on its fullest page, 101 Ll names and 14 I names, starts with *aacain*, and ends with *zurrar* (the OCR read *zurrac*; corrected from the article).
+
 This repository contains only the transcribed text, not the page images.
 
 ## Read this before using it
@@ -47,7 +52,8 @@ This repository contains only the transcribed text, not the page images.
 | --- | --- |
 | `book_page` | Page number printed in the book's name list (empty if it couldn't be read) |
 | `issuu_page` | Page number in the Issuu scan |
-| `column`, `row` | Position on the page: column 1–6, then row from the top (row only, on hand-typed pages) |
+| `block` | Where a new letter starts mid-page, the book runs the heading across the page and starts the new section in all six columns below it: blocks number those bands from the top (1 on most pages). The page reads block by block, each block column by column |
+| `column`, `row` | Position on the page: column 1–6, then row from the top of the column (row only, on hand-typed pages) |
 | `entry` | The name as we read it, lowercase, as printed (accents kept) |
 | `status` | How much to trust it (below) |
 | `confidence` | The OCR's confidence in the line, 0–1 (empty on hand-typed pages) |

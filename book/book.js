@@ -7,7 +7,7 @@ import * as THREE from "three";
 // Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROPS_V = 3;                               // bump when the strips change: they're cached for a week
+const CROPS_V = 4;                               // bump when the strips change: they're cached for a week
 // A crop's cell in the strip (px, drawn at 2x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 400, CELL_H = 128, LINE_Y = 32, LINE_H = 52, ACROSS = 4, CELL_PAD = 6;

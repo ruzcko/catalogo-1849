@@ -77,7 +77,7 @@ def main():
         else:
             out = [[round(float(r["x0"])), round(float(r["y0"])), round(float(r["x1"])), round(float(r["y1"])),
                     r["entry"], STATUS[r["status"]], int(r["column"]), int(r["row"]), raw(r)]
-                   for r in sorted(entries, key=lambda r: (int(r["column"]), int(r["row"])))]
+                   for r in sorted(entries, key=lambda r: (int(r["block"] or 1), int(r["column"]), int(r["row"])))]   # reading order
         k = 0
         for e in out:  # number the doubtful entries: their crops' order in the page's crop strip
             while len(e) < 9:
