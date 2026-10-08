@@ -1232,6 +1232,9 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   mode = wantMode();
   const hash = location.hash, path = location.pathname;   // before resize() rewrites them
   resize();
+  // Start where the camera is going, not gliding there from the spine (a glide that stalls in a hidden tab).
+  Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz });
+  render();
   document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
   document.getElementById("sure").setAttribute("aria-pressed", String(sure));
   if (!(await follow(hash)) && !(await followPath(path))) showSpread();
