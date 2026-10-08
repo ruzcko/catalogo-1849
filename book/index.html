@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catálogo alfabético de apellidos · 1849</title>
+<meta name="description" content="Leaf through the 1849 Catálogo alfabético de apellidos, the book Filipino families chose their surnames from, recreated from an open transcription.">
+<meta property="og:title" content="Catálogo alfabético de apellidos (1849)">
+<meta property="og:description" content="Leaf through the book Filipino families chose their surnames from.">
+<meta name="theme-color" content="#1d1712">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="stage" aria-label="The book. Drag or use the arrows to turn pages; double-tap to zoom."></canvas>
+
+<header class="bar top">
+  <div class="title"><b>Catálogo alfabético de apellidos</b><span>1849</span></div>
+  <form class="search" role="search" autocomplete="off">
+    <input id="q" type="search" placeholder="Find a surname" aria-label="Find a surname in the book" spellcheck="false">
+    <ul id="hits" role="listbox" hidden></ul>
+  </form>
+  <button type="button" id="info" class="icon" aria-label="About this book">?</button>
+</header>
+
+<nav class="bar bottom" aria-label="Pages">
+  <button type="button" id="prev" class="icon" aria-label="Previous page">‹</button>
+  <button type="button" id="where" class="where" aria-label="Go to a page"></button>
+  <button type="button" id="next" class="icon" aria-label="Next page">›</button>
+  <button type="button" id="unzoom" class="icon" aria-label="Zoom out" hidden>⤢</button>
+</nav>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<dialog id="about">
+  <h2>Catálogo alfabético de apellidos</h2>
+  <p>In 1849 Governor-General Narciso Clavería ordered that families without fixed surnames take one from this book, about 61,000 names, Spanish and native, sent to every province.</p>
+  <p>This is a recreation, not a scan: every page is set in type from an open, machine-read transcription of the National Archives of the Philippines' 1973 reprint, as digitized by the Filipinas Heritage Library. Names sit where they sit on the scanned page. Some readings are uncertain, and a few pages are missing from the only scan online.</p>
+  <p>Drag or use ‹ › to turn pages. Double-tap or pinch to zoom.</p>
+  <p class="small">Transcription: <a href="https://github.com/ruzcko/catalogo-1849" target="_blank" rel="noopener">github.com/ruzcko/catalogo-1849</a> (CC BY 4.0). Code: MIT. Type: IM Fell, by Igino Marini (OFL). Made by <a href="https://apelyido.ruzcko.com" target="_blank" rel="noopener">Apelyido</a>.</p>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+
+<script type="module" src="book.js"></script>
+</body>
+</html>

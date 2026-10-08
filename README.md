@@ -66,6 +66,15 @@ This repository contains only the transcribed text, not the page images.
 
 For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
+## The virtual book
+
+`book/` is a 3D book you can leaf through, with every page set in type from this transcription. It uses no scan images: each name is placed where it sits on the scanned page, and pages missing from the scan say so. It's a static site (three.js from a CDN, no build step).
+
+    python tools/build_book.py           # catalogo_1849.csv -> book/data/ (pages, entries, search index)
+    python -m http.server -d book 8000   # then open http://localhost:8000
+
+Links: `#p=58` opens page 58; `#n=fabella` finds a name and marks it.
+
 ## Licence
 
 The transcription is released under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**. You may use it for anything, including commercially, as long as you credit it, for example:
@@ -73,6 +82,8 @@ The transcription is released under **[CC BY 4.0](https://creativecommons.org/li
 > *Catálogo alfabético de apellidos (1849), open transcription by Apelyido (apelyido.ruzcko.com), from the National Archives of the Philippines' 1973 reprint as digitized by the Filipinas Heritage Library.*
 
 The underlying 1849 text is in the public domain.
+
+The code in `book/` and `tools/` is MIT-licensed (`LICENSE-CODE`). The book's typeface is IM Fell English by Igino Marini (SIL Open Font License), loaded from Google Fonts.
 
 ## Corrections
 
