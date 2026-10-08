@@ -4,6 +4,9 @@
 /*.css
   Cache-Control: public, max-age=300
 
+/fonts/*
+  Cache-Control: public, max-age=2592000
+
 /data/*
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 

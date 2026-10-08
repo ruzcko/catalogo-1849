@@ -2,16 +2,16 @@
 
 A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
 
-**At a glance:** 57,984 entries from all 141 name-list pages, read from two independent scans (updated 8 October 2026):
+**At a glance:** 57,984 entries from all 141 name-list pages, read from two independent scans (updated 9 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
 | `checked` (corrected from a source) | 1 |
-| `sure` | 11,144 |
-| `likely` | 21,306 |
-| `best_effort` | 20,233 |
-| `low` | 4,508 |
+| `sure` | 11,161 |
+| `likely` | 21,375 |
+| `best_effort` | 20,153 |
+| `low` | 4,502 |
 
 Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,071 names) that the Issuu scan skips. Two OCR readings agree on 24,994 names; where they differ (24,698), the more likely one is kept and the other is recorded. The book prints about 60,662 names, so a few thousand lines are still unread.
 
@@ -63,7 +63,7 @@ This repository contains only the transcribed text, not the page images.
 | Column | Meaning |
 | --- | --- |
 | `book_page` | Page number printed in the book's name list |
-| `block` | Where a new letter starts mid-page, the book runs the heading across the page and starts the new section in all six columns below it: blocks number those bands from the top (1 on most pages). The page reads block by block, each block column by column |
+| `block` | Where a new letter starts mid-page, the book runs the heading across the page and starts the new section in all six columns below it: blocks number those bands from the top (1 on most pages). The numbers keep their order but can skip one (1, 2, 4), and are empty on the two hand-typed pages. The page reads block by block, each block column by column |
 | `column`, `row` | Position on the page: column 1–6, then row from the top of the column (row only, on hand-typed pages) |
 | `entry` | The name as we read it, lowercase, as printed (accents kept) |
 | `status` | How much to trust it (below) |
@@ -104,7 +104,7 @@ The transcription is released under **[CC BY 4.0](https://creativecommons.org/li
 
 The underlying 1849 text is in the public domain.
 
-The code in `book/` and `tools/` is MIT-licensed (`LICENSE-CODE`). The book's typeface is IM Fell English by Igino Marini (SIL Open Font License): the book loads it from Google Fonts, and the link-preview cards use the copies in `book/fonts`.
+The code in `book/` and `tools/` is MIT-licensed (`LICENSE-CODE`). The book's typeface is IM Fell English by Igino Marini (SIL Open Font License), from the copies in `book/fonts`: the TTFs for the link-preview cards, and cut to Latin-1 as WOFF2 for the book.
 
 ## Corrections
 

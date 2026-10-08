@@ -818,6 +818,29 @@ async function openEntryAt(px, py) {
   return true;
 }
 
+// The names on the open pages as a list, for keyboards and screen readers. Doubtful ones open their reading help.
+const list = document.getElementById("list");
+document.getElementById("names").onclick = async () => {
+  const shown = inView().map(v => FACES[v.f]).filter(k => k && k.n && !k.missing);
+  const box = list.querySelector(".pages");
+  if (!shown.length) box.innerHTML = `<p class="small">No names on these pages: turn to a page of the book.</p>`;
+  else {
+    const datas = await Promise.all(shown.map(k => loadPage(k.n)));
+    box.innerHTML = datas.map((data, i) => `<h3>Page ${shown[i].n}</h3><ol>` + data.e.map((e, j) => e[5] >= 3
+      ? `<li><button type="button" data-p="${i}" data-e="${j}">${esc(e[4])}<span class="sr"> (${STATUS[e[5]].toLowerCase()}: help read it)</span></button></li>`
+      : `<li>${esc(e[4])}</li>`).join("") + "</ol>").join("");
+    box.onclick = ev => {
+      const b = ev.target.closest("button[data-e]");
+      if (!b) return;
+      const data = datas[+b.dataset.p];
+      list.close();
+      openEntry({ page: shown[+b.dataset.p], scan: data.scan, e: data.e[+b.dataset.e] });
+    };
+  }
+  list.showModal();
+};
+list.querySelector(".x").onclick = () => list.close();
+
 let turnstileReady = null;
 function loadTurnstile() {
   turnstileReady ||= new Promise((resolve, reject) => {
@@ -1040,16 +1063,35 @@ document.getElementById("unzoom").onclick = frame;
 document.getElementById("layout").onclick = () => setLayout(!tidy);
 document.getElementById("sure").onclick = () => setSure(!sure);
 document.getElementById("info").onclick = () => document.getElementById("about").showModal();
-document.getElementById("where").onclick = () => {
-  const v = prompt("Go to page (1–141), or type a surname:");
+// Go to a page: the page label turns into a box for a page number (or a surname, handed to the search).
+const where = document.getElementById("where"), jump = document.getElementById("jump");
+where.onclick = () => {
+  where.hidden = true;
+  jump.hidden = false;
+  jump.value = "";
+  jump.focus();
+};
+function endJump(refocus) {
+  if (jump.hidden) return;
+  jump.hidden = true;
+  where.hidden = false;
+  if (refocus) where.focus();
+}
+jump.addEventListener("blur", () => { if (document.hasFocus()) endJump(false); });   // not when the window loses focus
+jump.addEventListener("keydown", e => {
+  if (e.key === "Escape") { e.preventDefault(); endJump(true); }
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const v = jump.value.trim();
+  endJump(true);
   if (!v) return;
-  if (/^\d+$/.test(v.trim())) {
-    const n = +v.trim(), p = PAGES.find(x => x.n === n);
+  if (/^\d+$/.test(v)) {
+    const n = +v, p = PAGES.find(x => x.n === n);
     if (p) goToPage(n); else toast("No such page");
   } else { q.value = v; q.dispatchEvent(new Event("input")); q.focus(); }
-};
+});
 addEventListener("keydown", e => {
-  if (e.target === q) return;
+  if (e.target.closest?.("input, textarea, select, dialog")) return;
   if (e.key === "ArrowRight") next();
   else if (e.key === "ArrowLeft") prev();
   else if (e.key === "+" || e.key === "=") zoomTo(view.zoom * 1.4, view.x, view.y);
@@ -1161,8 +1203,9 @@ addEventListener("hashchange", () => follow(location.hash));
 dlg.addEventListener("close", () => updateBar());   // back to the page's address
 
 (async () => {
+  const pages = fetch("/data/pages.json").then(r => r.json());
   await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`)]).catch(() => {});
-  PAGES = await fetch("/data/pages.json").then(r => r.json());
+  PAGES = await pages;
   FACES = ["cover", "endpaper", "title", "about", ...PAGES];
   if (FACES.length % 2 === 1) FACES.push(null);          // the last printed page's blank back
   FACES.push("fin", null, "endpaper", "backcover");   // the back cover is the back of the last leaf

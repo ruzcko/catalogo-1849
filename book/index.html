@@ -15,14 +15,16 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://catalogo-1849.ruzcko.com/og?v=1">
 <meta name="theme-color" content="#1d1712">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=10">
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }</script>
+<link rel="preload" href="/fonts/IMFeENrm28P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/IMFeENit28P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/IMFeENsc28P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" crossorigin>
+<link rel="stylesheet" href="/style.css?v=11">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" } }</script>
 </head>
 <body>
-<canvas id="stage" aria-label="The book. Drag or use the arrows to turn pages; double-tap to zoom."></canvas>
+<button type="button" id="names" class="skip">List the names on these pages</button>
+<canvas id="stage" aria-label="The book. Drag or use the arrow keys to turn pages; double-tap to zoom. The names on the open pages are listed by the first button."></canvas>
 
 <header class="bar top">
   <div class="title"><b>Catálogo alfabético de apellidos</b><span>1849</span></div>
@@ -36,6 +38,8 @@
 <nav class="bar bottom" aria-label="Pages">
   <button type="button" id="prev" class="icon" aria-label="Previous page">‹</button>
   <button type="button" id="where" class="where" aria-label="Go to a page"></button>
+  <input id="jump" class="where" type="text" inputmode="numeric" enterkeyhint="go" maxlength="30" autocomplete="off" spellcheck="false"
+    placeholder="Page 1–141" aria-label="Go to page (1–141), or type a surname" hidden>
   <button type="button" id="next" class="icon" aria-label="Next page">›</button>
   <button type="button" id="unzoom" class="icon" aria-label="Zoom out" hidden>⤢</button>
   <button type="button" id="sure" class="layout" aria-pressed="false" title="Show how sure we are of each reading, and help read the blurry ones">How sure?</button>
@@ -51,6 +55,11 @@
 
 <dialog id="entry" class="entry" aria-label="Help read this name"></dialog>
 
+<dialog id="list" class="list" aria-labelledby="list-h">
+  <div class="eh"><h2 id="list-h">Names on these pages</h2><button type="button" class="x" aria-label="Close">✕</button></div>
+  <div class="pages"></div>
+</dialog>
+
 <dialog id="about">
   <h2>Catálogo alfabético de apellidos</h2>
   <p>In 1849 Governor-General Narciso Clavería ordered that families without fixed surnames take one from this book, about 61,000 names, Spanish and native, sent to every province.</p>
@@ -61,6 +70,6 @@
   <form method="dialog"><button>Close</button></form>
 </dialog>
 
-<script type="module" src="/book.js?v=10"></script>
+<script type="module" src="/book.js?v=11"></script>
 </body>
 </html>

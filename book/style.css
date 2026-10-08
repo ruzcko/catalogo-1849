@@ -1,3 +1,8 @@
+/* IM Fell, by Igino Marini (SIL OFL, fonts/OFL-IM-Fell.txt): the TTFs in fonts/, cut to Latin-1 as WOFF2. */
+@font-face { font-family: "IM Fell English"; src: url("/fonts/IMFeENrm28P.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "IM Fell English"; font-style: italic; src: url("/fonts/IMFeENit28P.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "IM Fell English SC"; src: url("/fonts/IMFeENsc28P.woff2") format("woff2"); font-display: swap; }
+
 :root {
   --bg: #1d1712;
   --bar: rgba(29, 23, 18, .82);
@@ -33,6 +38,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 #hits li small { color: var(--muted); }
 #hits li.none { color: var(--muted); cursor: default; }
 button { font: inherit; color: var(--ink); background: none; border: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .icon { width: 40px; height: 40px; border-radius: 50%; font-size: 24px; line-height: 1; flex: none;
   display: grid; place-items: center; background: rgba(255, 255, 255, .06); }
 .icon:hover { background: rgba(255, 255, 255, .14); }
@@ -41,6 +47,7 @@ button { font: inherit; color: var(--ink); background: none; border: 0; cursor: 
 .layout { white-space: nowrap; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
 .layout[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 .where { min-width: 150px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .06); font-size: 15px; }
+input.where { width: 150px; font: inherit; font-size: 15px; color: var(--ink); text-align: center; border: 1px solid var(--accent); outline: none; }
 .toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: #2a221b; border: 1px solid var(--line); padding: 8px 16px; border-radius: 999px; z-index: 3;
   max-width: calc(100vw - 32px); text-align: center; }
@@ -57,9 +64,8 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
   .layout { padding: 6px 9px; font-size: 13px; }
   .title b { font-size: 15px; max-width: 42vw; }
   .search { flex-basis: 46vw; }
-  .layout { white-space: nowrap; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
-.layout[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
-.where { min-width: 120px; }
+  .where { min-width: 120px; }
+  input.where { width: 120px; }
 }
 
 /* Missing-page help */
@@ -72,8 +78,20 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
   text-decoration: none; font-weight: 700; border: 0; cursor: pointer; font: inherit; }
 @media (max-width: 560px) { .help { flex-direction: column; align-items: stretch; text-align: center; } }
 
+/* The names as text, for keyboards and screen readers: the first thing Tab reaches */
+.skip { position: fixed; top: 8px; left: 8px; z-index: 5; padding: 8px 16px; border-radius: 999px; background: var(--accent);
+  color: #21180f; transform: translateY(-200%); }
+.skip:focus { transform: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.list { width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: auto; }
+.list .eh { display: flex; align-items: center; gap: 10px; }
+.list .x { margin-left: auto; font-size: 18px; color: var(--muted); }
+.list h3 { font-weight: 400; color: var(--muted); margin: 14px 0 4px; }
+.list ol { columns: 3 9em; margin: 0; padding: 0; list-style: none; font-size: 17px; }
+.list li button { padding: 0; color: var(--accent); text-decoration: underline; text-align: left; }
+
 /* Reading help */
-.entry { width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - 40px); overflow: auto; }
+.entry { width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: auto; }
 .entry .eh { display: flex; align-items: center; gap: 10px; }
 .entry h2 { margin: 0; font-family: "IM Fell English", Georgia, serif; font-size: 30px; }
 .entry .x { margin-left: auto; font-size: 18px; color: var(--muted); }
