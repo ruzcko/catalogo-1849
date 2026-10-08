@@ -7,7 +7,7 @@ import * as THREE from "three";
 // Scan crops of the doubtful entries (the Filipinas Heritage Library's scan, one word per crop), served by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROP_W = 300, CROP_H = 39;                 // a crop as shown (its cell in the strip is 400 x 52)
+const CELL_W = 400, CELL_H = 52, CELL_PAD = 6;   // a crop's cell in the strip: 200 x 26 scan pixels at 2x
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
 const WHY = [
@@ -691,7 +691,7 @@ async function entryAt(px, py) {
     const d = Math.abs(sy - (e[1] + e[3]) / 2);
     if (d < bestD) { best = e; bestD = d; }
   }
-  return best && { page: kind, scan: data.scan, e: best };
+  return best && { page: kind, scan: data.scan, e: best, orig: data.e.find(x => x[6] === best[6] && x[7] === best[7]) };
 }
 
 async function openEntryAt(px, py) {
@@ -715,14 +715,17 @@ function loadTurnstile() {
 }
 
 const dlg = document.getElementById("entry");
-async function openEntry({ page, scan, e }) {
+async function openEntry({ page, scan, e, orig = e }) {
   const [, , , , name, status, col, row, raw, crop] = e;
+  // The crop, cut to the word's width and shown as large as fits.
+  const wordW = Math.min(CELL_W, (orig[2] - orig[0] + CELL_PAD + 10) * 2);
+  const k = Math.min(1.25, (Math.min(innerWidth - 72, 400)) / wordW);
   const id = `${scan}.${col}.${row}`;
   history.replaceState(null, "", `#e=${id}`);
   dlg.innerHTML = `
     <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
     <p class="why">${WHY[status]}</p>
-    ${CROPS && crop != null ? `<figure class="crop"><div style="background-image:url('${CROPS}${scan}.webp');background-position:0 -${crop * CROP_H}px;background-size:${CROP_W}px auto;width:${CROP_W}px;height:${CROP_H}px"></div>
+    ${CROPS && crop != null ? `<figure class="crop"><div style="background-image:url('${CROPS}${scan}.webp');background-position:0 -${crop * CELL_H * k}px;background-size:${CELL_W * k}px auto;width:${wordW * k}px;height:${CELL_H * k}px"></div>
       <figcaption>The scan, page ${page.n} · Filipinas Heritage Library</figcaption></figure>` : ""}
     ${raw ? `<p class="small">The OCR read <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
     <form class="readings" autocomplete="off">
