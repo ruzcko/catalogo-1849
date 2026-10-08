@@ -168,8 +168,10 @@ function drawMissing(g, side, n) {
 
 function drawPrinted(g, side, page, data) {
   paper(g, side);
+  const entries = layoutOf(data);
   const sizes = data.e.map(e => e[3] - e[1]).sort((a, b) => a - b);
-  const size = Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
+  let size = Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
+  if (tidy && data.pitch) size = Math.min(size, Math.round(data.pitch * S * 0.86));   // even lines: fit the type to them
   // The reprint's thumb letter, then the running head: page number and letter, as on the scanned page.
   g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
   g.fillStyle = INK;
@@ -178,7 +180,7 @@ function drawPrinted(g, side, page, data) {
   g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
   centred(g, page.letter, 118 * S, Math.round(17 * S));
   g.font = `${size}px ${FONT}`;
-  for (const [x0, y0, x1, y1, name] of data.e) {
+  for (const [x0, y0, x1, y1, name] of entries) {
     if (highlight && highlight.n === page.n && highlight.name === name) {
       g.fillStyle = "rgba(240, 196, 60, .55)";
       g.fillRect(x0 * S - 6, y0 * S - 4, Math.max(x1 - x0, 60) * S + 12, (y1 - y0) * S + 10);
@@ -190,6 +192,60 @@ function drawPrinted(g, side, page, data) {
     g.globalAlpha = 1;
   }
   centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
+}
+
+// Layout: "tidy" straightens a page into even columns and lines (the default); "scan" keeps every name where it
+// sits on the scanned page, crooked as the scan is. Either way a line the OCR missed stays a gap.
+let tidy = true;
+try { tidy = localStorage.getItem("layout") !== "scan"; } catch {}
+function layoutOf(data) {
+  if (!tidy) return data.e;
+  if (data.tidy) return data.tidy;
+  const e = data.e, median = a => a.sort((x, y) => x - y)[a.length >> 1];
+  const cols = Math.max(...e.map(x => x[6] || 1));
+  const left = Math.min(...e.map(x => x[0])), right = Math.max(...e.map(x => x[2]));
+  const top = Math.min(...e.map(x => x[1]));
+  const h = median(e.map(x => x[3] - x[1])) || 14;
+  // Line pitch: the usual step between one line and the next in a column.
+  const steps = [];
+  for (let i = 1; i < e.length; i++) if (e[i][6] === e[i - 1][6]) { const d = e[i][1] - e[i - 1][1]; if (d > 8 && d < 30) steps.push(d); }
+  let pitch = steps.length ? median(steps) : 16.5;
+  // The scan is slightly tilted, so each column counts lines from its own first line (when that line is near the
+  // top; a column whose first lines the OCR missed counts from the page's top instead).
+  const colTop = {};
+  for (const x of e) colTop[x[6]] = Math.min(colTop[x[6]] ?? Infinity, x[1]);
+  for (const c in colTop) if (colTop[c] - top > 1.5 * pitch) colTop[c] = top;
+  const slotted = [];
+  let prevCol = null, prevSlot = -1;
+  for (const x of e) {
+    if (x[6] !== prevCol) { prevCol = x[6]; prevSlot = -1; }
+    const slot = Math.max(Math.round((x[1] - colTop[x[6]]) / pitch), prevSlot + 1);
+    prevSlot = slot;
+    slotted.push([x, slot]);
+  }
+  const last = Math.max(...slotted.map(([, sl]) => sl));
+  if (top + (last + 1) * pitch > 1415) pitch = (1415 - top) / (last + 1);   // keep clear of the page number
+  const colW = (right - left) / cols;
+  data.pitch = pitch;
+  data.tidy = slotted.map(([x, slot]) => {
+    const x0 = left + ((x[6] || 1) - 1) * colW, y0 = top + slot * pitch;
+    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.92), Math.round(y0 + h), x[4], x[5], x[6]];
+  });
+  return data.tidy;
+}
+
+function setLayout(t) {
+  tidy = t;
+  try { localStorage.setItem("layout", t ? "tidy" : "scan"); } catch {}
+  document.getElementById("layout").textContent = t ? "Tidy" : "As scanned";
+  document.getElementById("layout").setAttribute("aria-pressed", String(!t));
+  for (const f of [...canvases.keys()]) {
+    canvases.delete(f);
+    for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
+  }
+  order.length = 0;
+  showSpread();
+  toast(t ? "Tidy: columns straightened" : "As scanned: names where they sit on the scan");
 }
 
 const pageData = new Map();
@@ -222,8 +278,8 @@ function drawFace(f, c) {
     ["Every page here is set in type from a machine-read", 30, FONT, 44],
     ["transcription of the National Archives of the", 30, FONT, 44],
     ["Philippines' 1973 reprint, as digitized by the", 30, FONT, 44],
-    ["Filipinas Heritage Library. Names sit where they", 30, FONT, 44],
-    ["sit on the scanned page; some readings are", 30, FONT, 44],
+    ["Filipinas Heritage Library. Each name keeps its", 30, FONT, 44],
+    ["column and line from the scan; some readings are", 30, FONT, 44],
     ["uncertain, and a few pages are missing.", 30, FONT, 120],
     ["The 1849 text is in the public domain.", 28, `italic ${FONT}`, 44],
     ["Transcription CC BY 4.0 · apelyido.ruzcko.com", 26, FONT, 0]], 560);
@@ -530,7 +586,7 @@ async function choose([name, pages]) {
   for (const m of [false, true]) { textures.get(`${f}:${m}`)?.dispose(); textures.delete(`${f}:${m}`); }
   goToPage(n, false);
   const data = await loadPage(n);
-  const e = data.e.find(x => x[4] === name);
+  const e = layoutOf(data).find(x => x[4] === name);
   if (e) {
     const pageX = f % 2 === 0 ? 0 : -W;
     const wx = pageX + ((e[0] + e[2]) / 2 / SCAN_W) * W, wy = H / 2 - ((e[1] + e[3]) / 2 / SCAN_H) * H;
@@ -616,6 +672,7 @@ canvas.addEventListener("wheel", e => {
 document.getElementById("next").onclick = next;
 document.getElementById("prev").onclick = prev;
 document.getElementById("unzoom").onclick = frame;
+document.getElementById("layout").onclick = () => setLayout(!tidy);
 document.getElementById("info").onclick = () => document.getElementById("about").showModal();
 document.getElementById("where").onclick = () => {
   const v = prompt("Go to page (1–141), or type a surname:");
@@ -680,6 +737,7 @@ window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }
   LEAVES = FACES.length / 2;
   const m = /p=(\d+)/.exec(location.hash), nm = /n=([^&]+)/.exec(location.hash);  // before resize() rewrites it
   resize();
+  document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
   if (nm) {
     const res = await lookup(decodeURIComponent(nm[1]));
     const hit = res.find(r => fold(r[0]) === fold(decodeURIComponent(nm[1])));

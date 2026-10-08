@@ -7,7 +7,8 @@ Each printed page keeps the entries where the scan has them (x0, y0, x1, y1 in s
 recreated page looks like the scanned one. Hand-typed pages have no positions: they're laid out in six even
 columns. Pages missing from the scan get a placeholder, so the page numbers run on as in the book.
 
-Status codes in the page files: 0 hand-typed or checked, 1 sure, 2 likely, 3 best effort, 4 low.
+Each entry: [x0, y0, x1, y1, name, status, column]. Status codes: 0 hand-typed or checked, 1 sure, 2 likely,
+3 best effort, 4 low. The site can draw entries where they are (as scanned) or straightened into even columns.
 """
 import csv
 import json
@@ -59,10 +60,10 @@ def main():
             for i, r in enumerate(sorted(entries, key=lambda r: int(r["row"]))):
                 col, row = divmod(i, per_col)
                 x0, y0 = 62 + col * 140, 150 + row * (1250 / per_col)
-                out.append([round(x0), round(y0), round(x0 + 110), round(y0 + 14), r["entry"], STATUS[r["status"]]])
+                out.append([round(x0), round(y0), round(x0 + 110), round(y0 + 14), r["entry"], STATUS[r["status"]], col + 1])
         else:
             out = [[round(float(r["x0"])), round(float(r["y0"])), round(float(r["x1"])), round(float(r["y1"])),
-                    r["entry"], STATUS[r["status"]]]
+                    r["entry"], STATUS[r["status"]], int(r["column"])]
                    for r in sorted(entries, key=lambda r: (int(r["column"]), int(r["row"])))]
         names = [e[4] for e in out if e[5] < 4]
         letters = sorted({e[4][0] for e in out if e[5] < 3}, key=lambda c: -sum(e[4][0] == c for e in out))

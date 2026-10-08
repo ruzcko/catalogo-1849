@@ -38,6 +38,8 @@ button { font: inherit; color: var(--ink); background: none; border: 0; cursor: 
 .icon:hover { background: rgba(255, 255, 255, .14); }
 .icon:disabled { opacity: .3; cursor: default; }
 #info { font-size: 18px; }
+.layout { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.layout[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 .where { min-width: 150px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .06); font-size: 15px; }
 .toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: #2a221b; border: 1px solid var(--line); padding: 8px 16px; border-radius: 999px; z-index: 3;
@@ -52,5 +54,7 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 @media (max-width: 560px) {
   .title b { font-size: 15px; max-width: 42vw; }
   .search { flex-basis: 46vw; }
-  .where { min-width: 120px; }
+  .layout { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.layout[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+.where { min-width: 120px; }
 }
