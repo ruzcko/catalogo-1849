@@ -917,6 +917,31 @@ window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }
   snap() { view.x = view.tx; view.y = view.ty; render(); } };
 
 // ---------- Start ----------
+// Links: #p=58 opens a page, #n=fabella finds a name and marks it, #e=100.1.6 opens one entry's reading help.
+// Followed on arrival and whenever the address's # part changes (a link clicked while the book is open).
+async function follow(hash) {
+  const m = /p=(\d+)/.exec(hash), nm = /n=([^&]+)/.exec(hash), ent = /e=(\d{2,3})\.(\d{1,2})\.(\d{1,3})/.exec(hash);
+  if (dlg.open) dlg.close();
+  if (ent) {
+    const page = PAGES.find(p => p.scan === +ent[1]);
+    if (page) {
+      goToPage(page.n, false);
+      const data = await loadPage(page.n);
+      const e = data.e.find(x => x[6] === +ent[2] && x[7] === +ent[3]);
+      if (e && e[5] >= 3) { if (!sure) setSure(true); openEntry({ page, scan: data.scan, e }); }
+      return true;
+    }
+  }
+  if (nm) {
+    const res = await lookup(decodeURIComponent(nm[1]));
+    const hit = res.find(r => fold(r[0]) === fold(decodeURIComponent(nm[1])));
+    if (hit) { choose(hit); return true; }
+  }
+  if (m) { goToPage(+m[1], false); return true; }
+  return false;
+}
+addEventListener("hashchange", () => follow(location.hash));
+
 (async () => {
   await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`)]).catch(() => {});
   PAGES = await fetch("data/pages.json").then(r => r.json());
@@ -924,25 +949,9 @@ window.__book = { view, scene, shadow, leaf, bendLeaf, get cur() { return cur; }
   if (FACES.length % 2 === 1) FACES.push(null);          // the last printed page's blank back
   FACES.push("fin", null, "endpaper", "backcover");   // the back cover is the back of the last leaf
   LEAVES = FACES.length / 2;
-  const m = /p=(\d+)/.exec(location.hash), nm = /n=([^&]+)/.exec(location.hash);  // before resize() rewrites it
-  const ent = /e=(\d{2,3})\.(\d{1,2})\.(\d{1,3})/.exec(location.hash);
+  const hash = location.hash;   // before resize() rewrites it
   resize();
   document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
   document.getElementById("sure").setAttribute("aria-pressed", String(sure));
-  if (ent) {   // a link to one entry: open its page and its reading panel
-    const page = PAGES.find(p => p.scan === +ent[1]);
-    if (page) {
-      goToPage(page.n, false);
-      const data = await loadPage(page.n);
-      const e = data.e.find(x => x[6] === +ent[2] && x[7] === +ent[3]);
-      if (e && e[5] >= 3) { if (!sure) setSure(true); return openEntry({ page, scan: data.scan, e }); }
-      return;
-    }
-  }
-  if (nm) {
-    const res = await lookup(decodeURIComponent(nm[1]));
-    const hit = res.find(r => fold(r[0]) === fold(decodeURIComponent(nm[1])));
-    if (hit) return choose(hit);
-  }
-  if (m) goToPage(+m[1], false); else showSpread();
+  if (!(await follow(hash))) showSpread();
 })();
