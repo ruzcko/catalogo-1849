@@ -1,7 +1,7 @@
-// POST /api/vote {id, reading, device, token}: a reader's reading of a doubtful entry, either one already shown
+// POST /api/vote {id, name, reading, device, token}: a reader's reading of a doubtful entry, either one already shown
 // (an upvote) or their own. One vote per entry per device. We keep the reading and a hash of a random code the
 // browser made up (no IP, no account). A Turnstile check keeps bots out.
-import { check, entryContext, json, normalise, tally } from "../../lib/readings.js";
+import { check, entryContext, json, normalise, seen, STALE, tally } from "../../lib/readings.js";
 
 const DEVICE = /^[0-9a-f]{32}$/;
 
@@ -14,6 +14,7 @@ export async function onRequestPost({ request, env }) {
   const body = await request.json().catch(() => null);
   const ctx = await entryContext(env, request, body?.id);
   if (!ctx) return json({ ok: false, error: "unknown" }, 404);
+  if (!seen(ctx, body?.name)) return json(STALE, 409);   // the name the reader saw must still be at that id
   const device = String(body?.device || "");
   if (!DEVICE.test(device)) return json({ ok: false, error: "device" }, 400);
   const reading = normalise(body?.reading);

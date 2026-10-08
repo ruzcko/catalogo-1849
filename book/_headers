@@ -7,8 +7,9 @@
 /fonts/*
   Cache-Control: public, max-age=2592000
 
+# Fetched as /data/...?v=<release>, so a new release always gets new files.
 /data/*
-  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Cache-Control: public, max-age=3600
 
 /*
   X-Content-Type-Options: nosniff

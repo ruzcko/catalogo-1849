@@ -12,6 +12,9 @@ const CROPS_V = 9;                               // the strips' folder (/scan/9/
 // A crop's cell in the strip (px, drawn at 1.5x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD = 6;
+// The book's data (book/data) is fetched with this release's version, the ?v= index.html puts on book.js, so a new
+// release never meets a page file the browser kept from the last one.
+const DATA_V = new URL(import.meta.url).searchParams.get("v") || "0", dataUrl = path => `/data/${path}?v=${DATA_V}`;
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
 // A line neither scan could read is "?" in the data, "unread" in its address (/2/unread, /2/unread-3).
@@ -318,8 +321,9 @@ function setLayout(t) {
 }
 
 const pageData = new Map();
+let noStore = false;   // set once the server says a page changed: fetch past any cached copy from then on
 async function loadPage(n) {
-  if (!pageData.has(n)) pageData.set(n, fetch(`/data/p/${n}.json`).then(r => r.json()));
+  if (!pageData.has(n)) pageData.set(n, fetch(dataUrl(`p/${n}.json`), noStore ? { cache: "no-store" } : {}).then(r => r.json()));
   return pageData.get(n);
 }
 
@@ -705,7 +709,7 @@ async function lookup(q) {
   const k = fold(q);
   if (!k) return [];
   const letter = k[0];
-  if (!searchIdx.has(letter)) searchIdx.set(letter, fetch(`/data/s/${letter}.json`).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+  if (!searchIdx.has(letter)) searchIdx.set(letter, fetch(dataUrl(`s/${letter}.json`)).then(r => r.ok ? r.json() : {}).catch(() => ({})));
   const names = await searchIdx.get(letter);
   const out = [];
   for (const [name, pages] of Object.entries(names)) {
@@ -775,6 +779,14 @@ try { sure = localStorage.getItem("sure") === "1"; } catch {}
 function redrawAll() {
   forget();
   show();
+}
+// The server's data differs from the page we drew (a copy cached from an older release): drop ours and redraw.
+function pageChanged() {
+  noStore = true;
+  pageData.clear();
+  if (dlg.open) dlg.close();
+  redrawAll();
+  toast("This page changed since you opened it: it's up to date now. Please try again.");
 }
 function setSure(on) {
   sure = on;
@@ -899,7 +911,8 @@ async function openEntry({ page, scan, e, orig = e }) {
   };
   const form = dlg.querySelector("form"), err = dlg.querySelector(".err");
   let res;
-  try { res = await fetch(`/api/entry?id=${encodeURIComponent(id)}`).then(r => r.json()); } catch { res = null; }
+  try { res = await fetch(`/api/entry?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`).then(r => r.json()); } catch { res = null; }
+  if (res?.error === "stale") return pageChanged();
   if (!res?.ok) { dlg.querySelector(".opts").innerHTML = `<p class="small">Couldn't load the readings. Try again later.</p>`; return; }
   const mine = voted(id);
   if (mine) return showTally(res.options, mine);
@@ -938,7 +951,8 @@ async function openEntry({ page, scan, e, orig = e }) {
     if (!token) { err.textContent = "One moment: we're checking you're a person."; return; }
     err.textContent = "";
     const r = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id, reading, device, token }) }).then(x => x.json()).catch(() => null);
+      body: JSON.stringify({ id, name, reading, device, token }) }).then(x => x.json()).catch(() => null);
+    if (r?.error === "stale") return pageChanged();
     if (r?.ok || r?.error === "already") {
       try { localStorage.setItem(`voted:${id}`, reading); } catch {}
       showTally(r.options, reading, r.pending);
@@ -1207,7 +1221,7 @@ addEventListener("hashchange", () => follow(location.hash));
 dlg.addEventListener("close", () => updateBar());   // back to the page's address
 
 (async () => {
-  const pages = fetch("/data/pages.json").then(r => r.json());
+  const pages = fetch(dataUrl("pages.json")).then(r => r.json());
   await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`)]).catch(() => {});
   PAGES = await pages;
   FACES = ["cover", "endpaper", "title", "about", ...PAGES];
