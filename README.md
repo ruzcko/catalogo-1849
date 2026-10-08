@@ -2,18 +2,18 @@
 
 A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
 
-**At a glance:** 57,984 entries from all 141 name-list pages, read from two independent scans (updated 9 October 2026):
+**At a glance:** 59,303 entries from all 141 name-list pages, read from two independent scans (updated 9 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
 | `checked` (corrected from a source) | 1 |
-| `sure` | 11,161 |
-| `likely` | 21,375 |
-| `best_effort` | 20,153 |
-| `low` | 4,502 |
+| `sure` | 11,353 |
+| `likely` | 21,479 |
+| `best_effort` | 21,060 |
+| `low` (382 of them `?`: lines neither scan could read) | 4,618 |
 
-Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,071 names) that the Issuu scan skips. Two OCR readings agree on 24,994 names; where they differ (24,698), the more likely one is kept and the other is recorded. The book prints about 60,662 names, so a few thousand lines are still unread.
+Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,275 names) that the Issuu scan skips. Two OCR readings agree on 25,864 names; where they differ (26,881), the more likely one is kept and the other is recorded. The book prints about 60,662 names: 382 lines are here as `?` because neither scan could read them, and about 1,400 are still missing.
 
 This is the first open, searchable list of the book's names that we know of. It powers the "The book" chapter of [Apelyido](https://apelyido.ruzcko.com).
 
@@ -48,7 +48,7 @@ The book is alphabetical on the **first three letters** of each name: on the han
 
 The order follows the book's own alphabet, the Spanish of 1849: **Ll is a letter of its own after L** (its section follows L), ñ comes after n, and accents don't count. In the Ll section the old type's "ll" often comes out of the OCR as "h", "li", "il" or "in" (*llamas* read as *hamas*); those are put back. There are no I, K, W or X sections, though a few I and K names sit among the Y and Q ones.
 
-**A check against a published count.** Todd Sales Lucero's "Ten things to know about the Catálogo" (*The Freeman*, 15 November 2023) counts 141 pages of names, six columns of 72 names (432 on a full page), about 53,517 names legible with certainty, 113 Ll names and 14 I names, and gives the first name as AACAIN and the last as ZURRAR. This transcription has 57,984 entries, 432 on its fullest page, 101 Ll names, starts with *aacain*, and ends with *zurrar* (the OCRs read *zurrac* and *zustar*; corrected from the article).
+**A check against a published count.** Todd Sales Lucero's "Ten things to know about the Catálogo" (*The Freeman*, 15 November 2023) counts 141 pages of names, six columns of 72 names (432 on a full page), about 53,517 names legible with certainty, 113 Ll names and 14 I names, and gives the first name as AACAIN and the last as ZURRAR. This transcription has 59,303 entries, 438 on its fullest page (more than a page holds, so a few lines there are read twice), 97 Ll names, starts with *aacain*, and ends with *zurrar* (the OCRs read *zurrac* and *zustar*; corrected from the article).
 
 This repository contains only the transcribed text, not the page images.
 
@@ -79,7 +79,7 @@ This repository contains only the transcribed text, not the page images.
 | `sure` | Both scans agree, or confident OCR (≥ 0.8), **and** a surname people still carry in the Philippines today (in local-election candidate lists or the 2023 barangay officials) |
 | `likely` | Both scans agree, or confident OCR (≥ 0.8), but not a surname found today (often an old native name) |
 | `best_effort` | Less confident OCR (0.6–0.8), the two scans confidently disagree, a one-letter fix from the book's order, or a confident reading that breaks the order: probably right, check before relying on it |
-| `low` | Low-confidence OCR (< 0.6), or a less confident one that breaks the order: often wrong |
+| `low` | Low-confidence OCR (< 0.6), or a less confident one that breaks the order: often wrong. `?` is a line neither scan could read |
 
 For most uses, keep `hand`, `checked`, `sure` and `likely`.
 

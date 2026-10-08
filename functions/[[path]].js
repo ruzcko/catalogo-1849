@@ -1,7 +1,7 @@
 // Every address that isn't a file: serve the book, with the title, description and preview image set for what the
 // address points at (/58, /fabella, /58/glubig), so a shared link shows its own card in Messenger, Facebook or X.
 // Files (anything with a dot, /data/, /fonts/) and the bare address go straight through.
-import { cap, esc, resolve } from "../lib/book.js";
+import { cap, esc, resolve, UNREAD } from "../lib/book.js";
 
 class SetContent {
   constructor(value) { this.value = value; }
@@ -27,6 +27,10 @@ export async function onRequestGet(context) {
     q.set("w", r.word);
     title = `${cap(r.word)} · Catálogo 1849`;
     desc = `${cap(r.word)} is on page ${r.n} of the Catálogo alfabético de apellidos, the book Filipino families chose their surnames from in 1849.`;
+  } else if (r.word === "?") {
+    q.set("w", UNREAD);
+    title = `Can you read this 1849 surname? · Catálogo 1849`;
+    desc = `Help read page ${r.n} of the Catálogo alfabético de apellidos: neither scan could read this line.`;
   } else {
     q.set("w", r.word);
     title = `Can you read this 1849 surname? · Catálogo 1849`;

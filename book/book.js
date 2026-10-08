@@ -8,12 +8,14 @@ import * as THREE from "three";
 // by Apelyido.
 // Set to null to stop showing them.
 const CROPS = "https://apelyido.ruzcko.com/scan/";
-const CROPS_V = 8;                               // bump when the strips change: they're cached for a week
+const CROPS_V = 9;                               // the strips' folder (/scan/9/): a new set goes in a new folder
 // A crop's cell in the strip (px, drawn at 1.5x): three lines, the entry's in the middle (LINE_Y, LINE_H). Cells sit
 // ACROSS to a row: crop k is at column k % ACROSS, row k / ACROSS (see Apelyido's pipeline/catalogo_crops.py).
 const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD = 6;
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
+// A line neither scan could read is "?" in the data, "unread" in its address (/2/unread, /2/unread-3).
+const unread = name => !/\p{L}/u.test(name), slug = name => (unread(name) ? "unread" : name);
 const WHY = [
   "A person typed this page from the scan.",
   "The OCR was confident, and people still carry this surname today.",
@@ -693,7 +695,7 @@ async function entryPath(page, e) {
   const data = await loadPage(page.n);
   const same = data.e.filter(x => x[4] === e[4]);
   const k = same.findIndex(x => x[6] === e[6] && x[7] === e[7]);
-  return `/${page.n}/${encodeURIComponent(e[4])}${k > 0 ? `-${k + 1}` : ""}`;
+  return `/${page.n}/${encodeURIComponent(slug(e[4]))}${k > 0 ? `-${k + 1}` : ""}`;
 }
 
 // ---------- Search ----------
@@ -827,7 +829,7 @@ document.getElementById("names").onclick = async () => {
   else {
     const datas = await Promise.all(shown.map(k => loadPage(k.n)));
     box.innerHTML = datas.map((data, i) => `<h3>Page ${shown[i].n}</h3><ol>` + data.e.map((e, j) => e[5] >= 3
-      ? `<li><button type="button" data-p="${i}" data-e="${j}">${esc(e[4])}<span class="sr"> (${STATUS[e[5]].toLowerCase()}: help read it)</span></button></li>`
+      ? `<li><button type="button" data-p="${i}" data-e="${j}">${unread(e[4]) ? "<i>unread line</i>" : esc(e[4])}<span class="sr"> (${unread(e[4]) ? "neither scan could read it" : STATUS[e[5]].toLowerCase()}: help read it)</span></button></li>`
       : `<li>${esc(e[4])}</li>`).join("") + "</ol>").join("");
     box.onclick = ev => {
       const b = ev.target.closest("button[data-e]");
@@ -863,23 +865,23 @@ async function openEntry({ page, scan, e, orig = e }) {
   const cropStyle = around => {
     const k = around ? Math.min(1.33, room / CELL_W) : Math.min(1.67, room / wordW);
     const cx = (crop % ACROSS) * CELL_W, cy = Math.floor(crop / ACROSS) * CELL_H + (around ? 0 : LINE_Y);
-    return { k, css: `background-image:url('${CROPS}${scan}.webp?v=${CROPS_V}');background-size:${CELL_W * ACROSS * k}px auto;` +
+    return { k, css: `background-image:url('${CROPS}${CROPS_V}/${scan}.webp');background-size:${CELL_W * ACROSS * k}px auto;` +
       `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
   };
-  const id = `${scan}.${col}.${row}`;
+  const id = `${scan}.${col}.${row}`, blank = unread(name);
   const link = await entryPath(page, e);
   setPath(link);
   dlg.innerHTML = `
-    <div class="eh"><h2>${esc(name)}.</h2><span class="chip s${status}">${STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
-    <p class="why">${WHY[status]}</p>
+    <div class="eh"><h2>${blank ? "Unread line" : `${esc(name)}.`}</h2><span class="chip s${status}">${blank ? "Unread" : STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
+    <p class="why">${blank ? "Neither scan could read this line, so it has no reading yet. Can you read it?" : WHY[status]}</p>
     ${CROPS && crop != null ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
       <figcaption>The scan, page ${page.n} · digitized by Google from the University of Michigan's copy · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
     <p class="small order" hidden></p>
-    ${raw ? `<p class="small">The other scan reads <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
+    ${raw && !blank ? `<p class="small">The other scan reads <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
     <form class="readings" autocomplete="off">
       <p class="q">How do you read it?</p>
       <div class="opts"><p class="small">Loading…</p></div>
-      <label class="own">Something else: <input name="own" maxlength="20" spellcheck="false" autocapitalize="off" placeholder="type your reading"></label>
+      <label class="own">${blank ? "Your reading:" : "Something else:"} <input name="own" maxlength="20" spellcheck="false" autocapitalize="off" placeholder="type your reading"></label>
       <p class="err" role="alert"></p>
       <div class="ts"></div>
       <div class="acts"><button type="submit" class="primary">Vote</button><button type="button" class="notsure">Not sure, just show the votes</button></div>
@@ -917,8 +919,9 @@ async function openEntry({ page, scan, e, orig = e }) {
     if (around) mark.style.cssText = `top:${LINE_Y * k}px;height:${LINE_H * k}px;width:${wordW * k}px`;
     aroundBtn.textContent = around ? "Just this line" : "Show the lines around it";
   };
-  dlg.querySelector(".opts").innerHTML = res.options.map(o =>
-    `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>our reading</small>` : ""}</label>`).join("");
+  dlg.querySelector(".opts").innerHTML = res.options.length ? res.options.map(o =>
+    `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>our reading</small>` : ""}</label>`).join("")
+    : `<p class="small">No readings yet: type yours below.</p>`;
   form.own.addEventListener("input", () => { form.querySelectorAll("input[name=pick]").forEach(r => { r.checked = false; }); });
   form.querySelectorAll("input[name=pick]").forEach(r => r.addEventListener("change", () => { form.own.value = ""; }));
   dlg.querySelector(".notsure").onclick = () => showTally(res.options, null);
@@ -1160,7 +1163,8 @@ async function followPath(path) {
   const page = /^\d{1,3}$/.test(parts[0]) ? PAGES.find(p => p.n === +parts[0]) : null;
   if (page && parts.length === 1) { goToPage(page.n, false); return true; }
   if (page && parts.length === 2) {   // an entry: its reading, and which one if the page has it twice
-    const [, name, k] = /^(.+?)(?:-(\d+))?$/.exec(parts[1].toLowerCase()) || [];
+    const [, s, k] = /^(.+?)(?:-(\d+))?$/.exec(parts[1].toLowerCase()) || [];
+    const name = s === "unread" ? "?" : s;
     goToPage(page.n, false);
     if (page.missing) return true;
     const data = await loadPage(page.n);

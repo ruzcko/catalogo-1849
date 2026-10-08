@@ -3,7 +3,7 @@
 // rendered with resvg (lib/og, MPL-2.0), then cached at the edge. With no k, the book's general card.
 import { initWasm, Resvg } from "../lib/og/resvg.mjs";
 import wasm from "../lib/og/resvg.wasm";
-import { cap, esc } from "../lib/book.js";
+import { cap, esc, UNREAD } from "../lib/book.js";
 
 const W = 1200, H = 630, INK = "#2a2017", PAPER = "#efe4c8", RED = "#9a3b1f";
 let ready = null, fonts = null;
@@ -45,6 +45,12 @@ function card({ k, n, w, page, data }) {
     const s = big(w + ".", 150, 700);
     main = `<text x="76" y="${170 + s}" font-size="${s}">${esc(cap(w))}.</text>
       <text x="84" y="${250 + s}" font-size="46" font-style="italic">is in the 1849 Catálogo, page ${n}.</text>`;
+  } else if (k === "entry" && w === "?") {
+    main = `<text x="80" y="210" font-size="58">Can you read this</text>
+      <text x="80" y="276" font-size="58">1849 surname?</text>
+      <text x="76" y="400" font-size="96" font-style="italic">An unread line</text>
+      <line x1="80" y1="430" x2="700" y2="430" stroke="${RED}" stroke-width="4" stroke-dasharray="10 8"/>
+      <text x="84" y="490" font-size="38" font-style="italic" fill-opacity=".8">Neither scan could read it: page ${n}.</text>`;
   } else if (k === "entry") {
     const s = big(w + "?", 130, 640);
     main = `<text x="80" y="210" font-size="58">Can you read this</text>
@@ -79,7 +85,8 @@ export async function onRequestGet({ request, env, waitUntil }) {
   const url = new URL(request.url), p = url.searchParams;
   const k = ["page", "missing", "name", "entry"].includes(p.get("k")) ? p.get("k") : "home";
   const n = /^\d{1,3}$/.test(p.get("n") || "") ? +p.get("n") : null;
-  const w = /^[\p{L} -]{1,30}$/u.test(p.get("w") || "") ? p.get("w").toLowerCase() : null;
+  let w = /^[\p{L} -]{1,30}$/u.test(p.get("w") || "") ? p.get("w").toLowerCase() : null;
+  if (k === "entry" && w === UNREAD) w = "?";
   if ((k !== "home" && !n) || ((k === "name" || k === "entry") && !w)) return new Response("bad request", { status: 400 });
   try {
     const fontData = await setup(env, url.origin);
