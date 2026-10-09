@@ -635,8 +635,8 @@ function startTurn(dir) {
   if (closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
   // Closing a cover: it is the only leaf on its side, so that side's stack and board go with it, not stay behind.
   if (T.rigid && mode === "spread") {
-    if (dir < 0 && cur === 1) stackL.visible = boardL.visible = false;
-    if (dir > 0 && cur === LEAVES - 1) stackR.visible = boardR.visible = false;
+    if (dir < 0 && cur === 1) { stackL.visible = boardL.visible = false; shadow.scale.x = 0.55; shadow.position.x = W / 2; }
+    if (dir > 0 && cur === LEAVES - 1) { stackR.visible = boardR.visible = false; shadow.scale.x = 0.55; shadow.position.x = -W / 2; }
   }
   drawTurn();
   return T;
