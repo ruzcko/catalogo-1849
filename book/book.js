@@ -15,6 +15,21 @@ const CELL_W = 300, CELL_H = 96, LINE_Y = 24, LINE_H = 39, ACROSS = 4, CELL_PAD 
 // The book's data (book/data) is fetched with this release's version, the ?v= index.html puts on book.js, so a new
 // release never meets a page file the browser kept from the last one.
 const DATA_V = new URL(import.meta.url).searchParams.get("v") || "0", dataUrl = path => `/data/${path}?v=${DATA_V}`;
+// The scanned pages, for the Scan view: Google's scan of the University of Michigan copy, one image per page, served
+// by Apelyido from /scan/pages/<version>/<page>.webp (with CORS, as the book draws them into WebGL textures). Its
+// meta.json says how the dataset's boxes (Google px, a page 2,400 wide) map to image px: image = box x scale +
+// offset ({"scale": 0.667, "offset": [0, 0], ...}); without it an image is taken to be the whole page, scaled.
+// ?scans=<base> tries another host while developing (an Apelyido preview, or a folder on this site).
+const SCANS = (() => {
+  try {
+    const s = new URLSearchParams(location.search).get("scans");
+    if (s && (/^\/[\w/-]*\/$/.test(s) || /^https:\/\/[\w-]+\.apelyido\.pages\.dev\/[\w/-]*\/$/.test(s))) return s;
+  } catch {}
+  return "https://apelyido.ruzcko.com/scan/pages/";
+})();
+const SCANS_V = 1;
+const SCAN_CREDIT = "Digitized by Google from the University of Michigan's copy (1973 National Archives reprint)";
+const GW = 2400, GH = 3882;                       // Google's page, in the dataset's pixels
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
 // A line neither scan could read is "?" in the data, "unread" in its address (/2/unread, /2/unread-3).
@@ -241,12 +256,13 @@ function drawPrinted(g, side, page, data) {
   g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
   centred(g, page.letter, 118 * S, Math.round(17 * S));
   g.font = `${size}px ${FONT}`;
-  for (const [x0, y0, x1, y1, name, status] of entries) {
+  for (const e of entries) {
+    const [x0, y0, x1, y1, name, status] = e;
     if (sure && status === 4) {   // blurry: highlighted so it stands out
       g.fillStyle = "rgba(232, 150, 60, .32)";
       g.fillRect(x0 * S - 4, y0 * S - 2, Math.max(x1 - x0, 50) * S + 8, (y1 - y0) * S + 6);
     }
-    if (highlight && highlight.n === page.n && highlight.name === name) {
+    if (marked(page, e)) {
       g.fillStyle = "rgba(240, 196, 60, .55)";
       g.fillRect(x0 * S - 6, y0 * S - 4, Math.max(x1 - x0, 60) * S + 12, (y1 - y0) * S + 10);
     }
@@ -270,10 +286,19 @@ function drawPrinted(g, side, page, data) {
   centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
 }
 
-// Layout: "tidy" straightens a page into even columns and lines (the default); "scan" keeps every name where it
-// sits on the scanned page, crooked as the scan is. Either way a line the OCR missed stays a gap.
-let tidy = true;
-try { tidy = localStorage.getItem("layout") !== "scan"; } catch {}
+// Views: "tidy" sets the names in even columns and lines (the default); "inplace" sets each name where it sits on the
+// scanned page, crooked as the scan is; "scan" shows the scanned page itself. Either typeset view leaves a gap where
+// the OCR missed a line. The view is remembered per browser (?view= picks one).
+const VIEWS = { tidy: ["Tidy", "Tidy: the names set in straight columns"],
+  inplace: ["In place", "In place: the names set where they sit on the page"],
+  scan: ["Scan", "Scan: the scanned page itself, digitized by Google from the University of Michigan's copy"] };
+let pageView = "tidy";
+try {
+  const old = localStorage.getItem("layout");   // before there were three views: "scan" meant in place
+  pageView = new URLSearchParams(location.search).get("view") || localStorage.getItem("view") || (old === "scan" ? "inplace" : "tidy");
+} catch {}
+if (!VIEWS[pageView]) pageView = "tidy";
+let tidy = pageView === "tidy";
 function layoutOf(data) {
   if (!tidy) return data.e;
   if (data.tidy) return data.tidy;
@@ -310,14 +335,22 @@ function layoutOf(data) {
   return data.tidy;
 }
 
-function setLayout(t) {
-  tidy = t;
-  try { localStorage.setItem("layout", t ? "tidy" : "scan"); } catch {}
-  document.getElementById("layout").textContent = t ? "Tidy" : "As scanned";
-  document.getElementById("layout").setAttribute("aria-pressed", String(!t));
+function viewButton() {
+  const b = document.getElementById("layout"), keys = Object.keys(VIEWS), nextView = keys[(keys.indexOf(pageView) + 1) % keys.length];
+  b.textContent = VIEWS[pageView][0];
+  b.title = `${VIEWS[pageView][1]}. Tap for ${VIEWS[nextView][0]}.`;
+  b.setAttribute("aria-label", `View: ${VIEWS[pageView][0]}. Switch to ${VIEWS[nextView][0]}`);
+  canvas.setAttribute("aria-label", `The book${pageView === "scan" ? ", showing the scanned pages" : ""}. Drag or use the arrow keys to turn pages; ` +
+    "double-tap to zoom. The names on the open pages are listed by the first button.");
+}
+function setView(v) {
+  pageView = v;
+  tidy = v === "tidy";
+  try { localStorage.setItem("view", v); } catch {}
+  viewButton();
   forget();
   show();
-  toast(t ? "Tidy: columns straightened" : "As scanned: names where they sit on the scan");
+  toast(VIEWS[v][1]);
 }
 
 const pageData = new Map();
@@ -375,9 +408,87 @@ function drawFace(f, c, side) {
   else if (kind && kind.missing) drawMissing(g, side, kind.n);
   else if (kind) {
     paper(g, side);
-    loadPage(kind.n).then(data => { drawPrinted(g, side, kind, data); refreshFace(f, side); });
+    loadPage(kind.n).then(data => {
+      drawPrinted(g, side, kind, data);
+      if (pageView === "scan") loadingNote(g);
+      refreshFace(f, side);
+      if (pageView !== "scan") return;
+      Promise.all([scanImage(kind.scan), scanMeta()]).then(([img, meta]) => {
+        if (canvases.get(`${f}:${side}`) !== c) return;   // forgotten meanwhile (another view, or out of memory)
+        if (img) drawScan(g, kind, data, img, meta);
+        else { drawPrinted(g, side, kind, data); loadingNote(g, "The scan of this page didn't load."); }
+        refreshFace(f, side);
+      });
+    });
   } else paper(g, side);
 }
+
+// ---------- The scanned pages (Scan view) ----------
+const scanImages = new Map();                     // scan number -> Promise of its image (or null), the last ten
+let scanMetaP = null;
+const scanMeta = () => (scanMetaP ||= fetch(`${SCANS}${SCANS_V}/meta.json`).then(r => (r.ok ? r.json() : null)).catch(() => null));
+function scanImage(n) {
+  if (!scanImages.has(n)) {
+    scanImages.set(n, new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";              // drawn into a WebGL texture: it must come with CORS
+      img.decoding = "async";
+      img.alt = `Scan of page ${n}`;
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = `${SCANS}${SCANS_V}/${n}.webp`;
+    }));
+    while (scanImages.size > 10) scanImages.delete(scanImages.keys().next().value);
+  }
+  return scanImages.get(n);
+}
+function loadingNote(g, text = "Loading the scan…") {
+  g.save();
+  g.font = `italic ${Math.round(15 * S)}px ${FONT}`;
+  const w = g.measureText(text).width + 28 * S;
+  g.fillStyle = "rgba(42, 32, 23, .78)";
+  g.fillRect((TEX_W - w) / 2, 70 * S, w, 26 * S);
+  g.fillStyle = "#f3ead6";
+  g.textAlign = "center";
+  g.fillText(text, TEX_W / 2, 88 * S);
+  g.restore();
+}
+// The scan, drawn so the dataset's boxes land on their lines: Google px -> image px by meta.json (or the image's own
+// width), and Google px -> texture px by the page's size.
+function drawScan(g, page, data, img, meta) {
+  const scale = (meta && meta.scale) || img.naturalWidth / GW, [dx, dy] = (meta && meta.offset) || [0, 0];
+  const kx = TEX_W / GW, ky = TEX_H / GH;
+  g.fillStyle = "#fff";
+  g.fillRect(0, 0, TEX_W, TEX_H);
+  g.drawImage(img, (-dx / scale) * kx, (-dy / scale) * ky, (img.naturalWidth / scale) * kx, (img.naturalHeight / scale) * ky);
+  if (!page.hand) {                               // a hand-typed page's entries have no positions on the scan
+    for (const e of data.e) {
+      const [x0, y0, x1, y1, , status] = e, x = x0 * S - 5, y = y0 * S - 3, w = Math.max(x1 - x0, 40) * S + 10, h = (y1 - y0) * S + 6;
+      if (marked(page, e)) {
+        g.fillStyle = "rgba(240, 196, 60, .28)";
+        g.fillRect(x - 3, y - 3, w + 6, h + 6);
+        g.strokeStyle = "#c9561a";
+        g.lineWidth = 4;
+        g.strokeRect(x - 3, y - 3, w + 6, h + 6);
+      } else if (sure && status >= 3) {          // How sure?: blurry ones washed orange, best guesses dotted
+        if (status === 4) { g.fillStyle = "rgba(232, 150, 60, .22)"; g.fillRect(x, y, w, h); }
+        g.setLineDash(status === 4 ? [] : [4, 4]);
+        g.strokeStyle = status === 4 ? "rgba(214, 120, 30, .9)" : "rgba(120, 80, 30, .7)";
+        g.lineWidth = 2;
+        g.strokeRect(x, y, w, h);
+        g.setLineDash([]);
+      }
+    }
+  }
+  g.save();
+  g.font = `italic ${Math.round(11 * S)}px ${FONT}`;
+  g.fillStyle = "rgba(42, 32, 23, .7)";
+  g.textAlign = "center";
+  g.fillText(SCAN_CREDIT, TEX_W / 2, TEX_H - 10 * S);
+  g.restore();
+}
+const marked = (page, e) => highlight && highlight.n === page.n && highlight.name === e[4] &&
+  (highlight.col == null || (highlight.col === e[6] && highlight.row === e[7]));
 
 function refreshFace(f, side) {
   const t = textures.get(`${f}:${side}`);
@@ -478,7 +589,10 @@ function prefetch() {
   const faces = mode === "single" ? [SINGLE[si + 1], SINGLE[si - 1]] : [2 * cur + 1, 2 * cur + 2, 2 * cur - 2, 2 * cur - 3];
   for (const f of faces) {
     const kind = FACES[f];
-    if (kind && kind.n && !kind.missing) loadPage(kind.n);
+    if (kind && kind.n && !kind.missing) {
+      loadPage(kind.n);
+      if (pageView === "scan") scanImage(kind.scan);
+    }
   }
 }
 
@@ -812,12 +926,13 @@ async function entryAt(px, py) {
   const p = worldAt(px, py);
   const hitPage = inView().find(v => p.x >= v.x0 && p.x <= v.x0 + W);
   const kind = hitPage && FACES[hitPage.f];
-  if (!kind || !kind.n || kind.missing) return null;
+  if (!kind || !kind.n || kind.missing || (pageView === "scan" && kind.hand)) return null;
   const sx = ((p.x - hitPage.x0) / W) * SCAN_W, sy = ((H / 2 - p.y) / H) * SCAN_H;
   const data = await loadPage(kind.n);
   let best = null, bestD = Infinity;
   for (const e of layoutOf(data)) {
-    if (sx < e[0] - 6 || sx > Math.max(e[2], e[0] + 40) + 6 || sy < e[1] - 4 || sy > e[3] + 4) continue;
+    const pad = pageView === "scan" ? 12 : 6;     // on the scan, a tap near a line counts
+    if (sx < e[0] - pad || sx > Math.max(e[2], e[0] + 40) + pad || sy < e[1] - pad * 0.7 || sy > e[3] + pad * 0.7) continue;
     const d = Math.abs(sy - (e[1] + e[3]) / 2);
     if (d < bestD) { best = e; bestD = d; }
   }
@@ -881,6 +996,9 @@ async function openEntry({ page, scan, e, orig = e }) {
       `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
   };
   const id = `${scan}.${col}.${row}`, blank = unread(name);
+  highlight = { n: page.n, name, col, row };   // outlined on its page, until the next one
+  forget(faceOfPage(page.n));
+  show();
   const link = await entryPath(page, e);
   setPath(link);
   dlg.innerHTML = `
@@ -1077,7 +1195,7 @@ canvas.addEventListener("wheel", e => {
 document.getElementById("next").onclick = next;
 document.getElementById("prev").onclick = prev;
 document.getElementById("unzoom").onclick = frame;
-document.getElementById("layout").onclick = () => setLayout(!tidy);
+document.getElementById("layout").onclick = () => { const k = Object.keys(VIEWS); setView(k[(k.indexOf(pageView) + 1) % k.length]); };
 document.getElementById("sure").onclick = () => setSure(!sure);
 document.getElementById("info").onclick = () => document.getElementById("about").showModal();
 // Go to a page: the page label turns into a box for a page number (or a surname, handed to the search).
@@ -1235,7 +1353,7 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   // Start where the camera is going, not gliding there from the spine (a glide that stalls in a hidden tab).
   Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz });
   render();
-  document.getElementById("layout").textContent = tidy ? "Tidy" : "As scanned";
+  viewButton();
   document.getElementById("sure").setAttribute("aria-pressed", String(sure));
   if (!(await follow(hash)) && !(await followPath(path))) showSpread();
 })();
