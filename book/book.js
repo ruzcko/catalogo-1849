@@ -58,11 +58,11 @@ const faceOfPage = n => FRONT + PAGES.findIndex(p => p.n === n);
 
 // ---------- Renderer, scene, camera ----------
 const canvas = document.getElementById("stage");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });   // the room is the page's background
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1d1712);
+renderer.setClearColor(0x000000, 0);
 const camera = new THREE.PerspectiveCamera(16, 1, 0.01, 80);   // a long lens: a lifted page doesn't loom
 // Unlit materials: the pages show their drawn colours exactly; the turning leaf is shaded in its shader.
 
@@ -72,10 +72,19 @@ const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2 * W * 1.18, H * 1.12),
 shadow.position.z = -0.02;
 scene.add(shadow);
 
-const paperEdge = new THREE.MeshBasicMaterial({ color: 0xd8c9a8 });
+// Solid shapes, unlit like the pages: each side its own shade (box faces: +x, -x, +y, -y, +z, -z), so the closed book
+// reads as a block when it's seen at an angle. The front edge (-y) faces the reader then.
+const shaded = (hex, sides) => sides.map(k => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) }));
+const paperEdge = shaded(0xd8c9a8, [0.84, 0.84, 0.7, 0.93, 1, 0.6]);
 const stackL = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
 const stackR = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
 scene.add(stackL, stackR);
+// The hard covers' boards, under the pages and a little larger, in the cover's leather.
+const BOARD = 0.014, OVER = 0.02;
+const boardMat = shaded(0x5a1d16, [0.7, 0.7, 0.6, 0.85, 1, 0.5]);
+const boardL = new THREE.Mesh(new THREE.BoxGeometry(W + OVER, H + 2 * OVER, BOARD), boardMat);
+const boardR = new THREE.Mesh(new THREE.BoxGeometry(W + OVER, H + 2 * OVER, BOARD), boardMat);
+scene.add(boardL, boardR);
 
 const pageMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff });
 const leftPage = new THREE.Mesh(new THREE.PlaneGeometry(W, H), pageMat());
@@ -137,10 +146,11 @@ scene.add(castShadow);
 // Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back; the free edge
 // lags behind the spine. twist: -1..1, which corner leads (where it was grabbed).
 function poseLeaf(t, dir, twist = 0) {
-  const lift = Math.sin(Math.PI * t), theta = Math.PI * t, k = -dir * 0.9 * lift / W;
+  const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't bow
+  const lift = Math.sin(Math.PI * t), theta = Math.PI * t, k = rigid ? 0 : -dir * 0.9 * lift / W;
   bend.uTheta.value = theta;
   bend.uK.value = k;
-  bend.uTwist.value = 0.35 * twist * lift;
+  bend.uTwist.value = rigid ? 0 : 0.35 * twist * lift;
   // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
   const edge = Math.abs(k) < 1e-6 ? W * Math.cos(theta) : (Math.sin(theta + k * W) - Math.sin(theta)) / k;
   const width = 0.5 * W * lift + 0.02;
@@ -568,7 +578,15 @@ function place() {
   const alone = mode === "single" || cur === 0 || cur === LEAVES;
   shadow.scale.x = alone ? 0.55 : 1;
   shadow.position.x = mode === "single" || cur === 0 ? W / 2 : cur === LEAVES ? -W / 2 : 0;
+  boardR.visible = mode === "single" || cur < LEAVES;
+  boardL.visible = mode === "spread" && cur > 0;
+  boardR.position.set((W + OVER) / 2, 0, -LEAF - BOARD / 2);
+  boardL.position.set(-(W + OVER) / 2, 0, -LEAF - BOARD / 2);
+  // Closed, the book is seen at an angle, lying on the desk; open, from straight above, to read.
+  const tt = closedBook() ? 1 : 0;
+  if (tt !== view.tt) { view.tt = tt; ease(); }
 }
+const closedBook = () => (mode === "single" ? si === 0 || si === SINGLE.length - 1 : cur === 0 || cur === LEAVES);
 
 function show() {
   if (mode === "single") {
@@ -611,7 +629,9 @@ function startTurn(dir) {
     if (dir > 0) setMap(rightPage, 2 * cur + 2, "R"); else setMap(leftPage, 2 * cur - 3, "L");
   }
   leaf.visible = true;
-  T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null };
+  const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
+  T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
+  if (closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
   drawTurn();
   return T;
 }
@@ -621,7 +641,7 @@ function drawTurn() {
   const right = mode === "single" ? SINGLE.length - si : LEAVES - cur, left = mode === "single" ? 0 : cur;
   const zR = right * LEAF, zL = left * LEAF;
   leaf.position.z = zR + (zL - zR) * T.t + 0.003;
-  leaf.scale.z = mode === "single" ? 0.55 : 0.8;   // a flatter lift: the page turns low over the book, as a real one does
+  leaf.scale.z = T.rigid ? 1 : mode === "single" ? 0.55 : 0.8;   // a flatter lift: the page turns low over the book, as a real one does
   render();
 }
 
@@ -661,7 +681,7 @@ function turn(dir) {
 }
 
 // ---------- Camera: fit, zoom and pan ----------
-const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0 };   // x, y, zoom: now; tx, ty, tz: where the camera eases to
+const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0 };   // x, y, zoom, tilt: now; tx, ty, tz, tt: where the camera eases to
 const narrow = () => mode === "single";
 const TOP = () => document.querySelector(".bar.top").offsetHeight, BOT = () => document.querySelector(".bar.bottom").offsetHeight;
 
@@ -690,12 +710,16 @@ function fitDistance() {
 }
 
 function applyCamera() {
-  const d = fitDistance() / view.zoom;
+  // tilt 0: straight above the page. tilt 1: the book lying on a desk, seen from the front and a little to the
+  // right, a step further back. In between, the camera swings between the two.
+  const tilt = view.tilt, d = (fitDistance() / view.zoom) * (1 + 0.55 * tilt);
   // Keep the bars from covering the page: shift the view by half the difference between the two bars.
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const shift = ((BOT() - TOP()) / innerHeight) * d * tan;
-  camera.position.set(view.x, view.y - shift, d);
-  camera.lookAt(view.x, view.y - shift, 0);
+  const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt);
+  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x, y = view.y - shift;
+  camera.position.set(x + d * Math.sin(pitch) * Math.sin(yaw), y - d * Math.sin(pitch) * Math.cos(yaw), d * Math.cos(pitch));
+  camera.up.set(-Math.sin(yaw), Math.cos(yaw), 0);
+  camera.lookAt(x, y, 0);
   document.getElementById("unzoom").hidden = view.zoom < 1.05;
 }
 
@@ -708,9 +732,10 @@ function ease() {
     view.x += (view.tx - view.x) * k;
     view.y += (view.ty - view.y) * k;
     view.zoom += (view.tz - view.zoom) * k;
+    view.tilt += (view.tt - view.tilt) * (reduceMotion ? 1 : 0.07);   // the swing from desk to page is slower
     render();
-    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) > 1e-4) requestAnimationFrame(step);
-    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; easing = false; render(); }
+    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) > 1e-4) requestAnimationFrame(step);
+    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; easing = false; render(); }
   };
   step();
 }
@@ -805,6 +830,40 @@ function updateBar() {
   const n = kind && kind.n;
   if (!dlg.open) setPath(n ? `/${n}` : "/");
 }
+
+// ---------- The story before the book, then the book opening ----------
+// First visit: a few screens of history (index.html), then the closed book on the desk opens. Later visits: the
+// book opens straight away. A link to a page, a name or an entry skips both.
+const story = document.getElementById("story");
+let storyOpen = false;
+function showStory() {
+  storyOpen = true;
+  story.hidden = false;
+  story.classList.remove("closing");
+  story.scrollTop = 0;
+}
+function closeStory() {
+  if (!storyOpen) return;
+  storyOpen = false;
+  try { localStorage.setItem("story", "seen"); } catch {}
+  story.classList.add("closing");
+  setTimeout(() => { story.hidden = true; story.classList.remove("closing"); }, reduceMotion ? 0 : 600);
+  openBook(reduceMotion ? 0 : 650);
+}
+function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
+  if (document.hidden) {
+    addEventListener("visibilitychange", () => openBook(delay), { once: true });
+    return;
+  }
+  setTimeout(() => { if (!T && !storyOpen && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
+}
+story.querySelector(".skipbook").onclick = closeStory;
+story.querySelector(".open").onclick = closeStory;
+document.getElementById("restory").onclick = () => {
+  document.getElementById("about").close();
+  goToFace(0, false);   // back to the closed book, so it opens again after the story
+  showStory();
+};
 
 // Clean addresses: /58 is a page, /fabella a name, /58/glubig an entry to help read (/58/glubig-2 for a second
 // "glubig" on the same page). The address changes as you read, without adding to the back button's history.
@@ -1178,7 +1237,9 @@ const up = e => {
       setTimeout(async () => {
         if (lastTap !== now) return;   // it became a double tap
         if (sure && await openEntryAt(x, y)) return;
-        if (view.zoom <= 1.05) { if (x < innerWidth * 0.22) prev(); else if (x > innerWidth * 0.78) next(); }
+        if (view.zoom <= 1.05) {
+          if (x < innerWidth * 0.22) prev(); else if (x > innerWidth * 0.78 || closedBook()) next();
+        }
       }, 310);
     }
   }
@@ -1226,7 +1287,7 @@ jump.addEventListener("keydown", e => {
   } else { q.value = v; q.dispatchEvent(new Event("input")); q.focus(); }
 });
 addEventListener("keydown", e => {
-  if (e.target.closest?.("input, textarea, select, dialog")) return;
+  if (storyOpen || e.target.closest?.("input, textarea, select, dialog")) return;
   if (e.key === "ArrowRight") next();
   else if (e.key === "ArrowLeft") prev();
   else if (e.key === "+" || e.key === "=") zoomTo(view.zoom * 1.4, view.x, view.y);
@@ -1351,9 +1412,20 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   const hash = location.hash, path = location.pathname;   // before resize() rewrites them
   resize();
   // Start where the camera is going, not gliding there from the spine (a glide that stalls in a hidden tab).
-  Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz });
+  Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz, tilt: view.tt });
   render();
   viewButton();
   document.getElementById("sure").setAttribute("aria-pressed", String(sure));
-  if (!(await follow(hash)) && !(await followPath(path))) showSpread();
+  const linked = (await follow(hash)) || (await followPath(path));
+  if (linked) {   // a link to a page, a name or an entry: straight there, from above
+    Object.assign(view, { tilt: view.tt });
+    render();
+  } else {
+    showSpread();
+    Object.assign(view, { tilt: view.tt });
+    render();
+    let seen = false;
+    try { seen = localStorage.getItem("story") === "seen"; } catch {}
+    if (seen) openBook(900); else showStory();
+  }
 })();
