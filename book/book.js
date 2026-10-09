@@ -167,7 +167,8 @@ const INK = "#2a2017";
 const textures = new Map();                      // key "face:side" -> texture (side R: gutter on the left)
 const canvases = new Map();                      // key "face:side" -> canvas
 const order = [];                                // least recently used keys first
-const BLANK = -1;                                // the plain paper back of a page in single-page mode
+const BLANK = -2;                                // the plain paper back of a page in single-page mode (not -1: that is
+                                                 // "no page" left of a closed book, 2 x 0 - 1)
 let highlight = null;                            // {n, name}: a searched entry, marked on its page
 let noise = null;
 
