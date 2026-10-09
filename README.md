@@ -1,6 +1,8 @@
 # Catálogo alfabético de apellidos (1849): an open transcription
 
-A machine-read, partly hand-checked list of the surnames in the **Catálogo alfabético de apellidos**: the book of about 61,000 surnames that Governor-General Narciso Clavería's decree of 21 November 1849 distributed across the Philippines, so families without fixed surnames could take one.
+In 1849, many Filipinos had a baptismal name but no family name passed down, and so many shared the same saints' names that the tax lists and parish books couldn't tell people apart (the decree's preamble, 1973 reprint, p. x). So Governor-General Narciso Clavería's decree of 21 November 1849 sent a book of about 60,000 surnames, the **Catálogo alfabético de apellidos**, to every province, for families without a fixed surname to take one.
+
+This is a machine-read, partly hand-checked list of the names in that book.
 
 **At a glance:** 59,171 entries from all 141 name-list pages, read from two independent scans (updated 9 October 2026):
 
@@ -112,6 +114,12 @@ The order, from votes to the published book:
 4. **Merge** there, then run its sync check: if entries moved to other columns or rows, remap the votes first (they're kept by position).
 5. **Rebuild both:** copy the new `catalogo_1849.csv` here, run `tools/build_book.py`, and let Apelyido rebuild the crop strips in a new `/scan/<version>/` folder (bump `CROPS_V` and the `?v=` in `index.html`).
 6. **Deploy in lockstep:** Apelyido first (its new crops), then this book.
+
+## Further reading
+
+- Narciso Clavería's decree of 21 November 1849, and Domingo Abella's introduction, in the *Catálogo alfabético de apellidos* (National Archives of the Philippines, 1973 reprint), pp. vii–xvi.
+- Norman G. Owen, "The Principalia in Philippine History: Kabikolan, 1790–1898," *Philippine Studies* 22, no. 3 (1974).
+- Ambeth R. Ocampo, "How Filipinos got their surnames," *Philippine Daily Inquirer*, 28 February 2020.
 
 ## Licence
 

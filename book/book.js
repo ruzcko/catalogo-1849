@@ -403,7 +403,7 @@ function drawFace(f, c, side) {
     ["The 1849 text is in the public domain.", 28, `italic ${FONT}`, 44],
     ["Transcription CC BY 4.0 · apelyido.ruzcko.com", 26, FONT, 0]], 560);
   else if (kind === "fin") drawText(g, side, [["FIN.", 64, FONT_SC, 120],
-    ["About 61,000 surnames, sent to every province in 1849.", 30, `italic ${FONT}`, 50],
+    ["About 60,000 surnames, sent to every province in 1849.", 30, `italic ${FONT}`, 50],
     ["Find yours at apelyido.ruzcko.com", 30, FONT, 0]], 700);
   else if (kind && kind.missing) drawMissing(g, side, kind.n);
   else if (kind) {
@@ -942,7 +942,7 @@ async function entryAt(px, py) {
 async function openEntryAt(px, py) {
   const hit = await entryAt(px, py);
   if (!hit) return false;
-  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. The OCR is confident about this one.`); return true; }
+  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. ${WHY[hit.e[5]]}`); return true; }
   openEntry(hit);
   return true;
 }
@@ -1020,6 +1020,15 @@ async function openEntry({ page, scan, e, orig = e }) {
     <div class="tally" hidden></div>`;
   dlg.showModal();
   dlg.querySelector(".x").onclick = () => { dlg.close(); updateBar(); };
+  const aroundBtn = dlg.querySelector(".around");
+  if (aroundBtn) aroundBtn.onclick = () => {
+    const img = dlg.querySelector(".crop .img"), mark = img.querySelector(".mark"), around = mark.hidden;
+    const { k, css } = cropStyle(around);
+    img.style.cssText = css;
+    mark.hidden = !around;
+    if (around) mark.style.cssText = `top:${LINE_Y * k}px;height:${LINE_H * k}px;width:${wordW * k}px`;
+    aroundBtn.textContent = around ? "Just this line" : "Show the lines around it";
+  };
   dlg.querySelector(".askfriend").onclick = async () => {
     const url = location.origin + link, text = `Can you read this 1849 surname? Help read the Catálogo alfabético de apellidos.`;
     try {
@@ -1041,15 +1050,6 @@ async function openEntry({ page, scan, e, orig = e }) {
       : res.prev ? `In the book it comes after <b>${esc(res.prev)}</b>.` : `In the book it comes before <b>${esc(res.next)}</b>.`;
     o.hidden = false;
   }
-  const aroundBtn = dlg.querySelector(".around");
-  if (aroundBtn) aroundBtn.onclick = () => {
-    const img = dlg.querySelector(".crop .img"), mark = img.querySelector(".mark"), around = mark.hidden;
-    const { k, css } = cropStyle(around);
-    img.style.cssText = css;
-    mark.hidden = !around;
-    if (around) mark.style.cssText = `top:${LINE_Y * k}px;height:${LINE_H * k}px;width:${wordW * k}px`;
-    aroundBtn.textContent = around ? "Just this line" : "Show the lines around it";
-  };
   dlg.querySelector(".opts").innerHTML = res.options.length ? res.options.map(o =>
     `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>OCR reading</small>` : ""}</label>`).join("")
     : `<p class="small">No readings yet: type yours below.</p>`;
