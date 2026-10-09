@@ -57,7 +57,7 @@ function card({ k, n, w, page, data }) {
       <text x="80" y="276" font-size="58">1849 surname?</text>
       <text x="76" y="${300 + s}" font-size="${s}" font-style="italic">${esc(w)}?</text>
       <line x1="80" y1="${320 + s}" x2="${Math.min(780, 80 + w.length * s * 0.47)}" y2="${320 + s}" stroke="${RED}" stroke-width="4" stroke-dasharray="10 8"/>
-      <text x="84" y="${380 + s}" font-size="38" font-style="italic" fill-opacity=".8">Our best guess, from a blurry page ${n}.</text>`;
+      <text x="84" y="${380 + s}" font-size="38" font-style="italic" fill-opacity=".8">The OCR's best guess, from a blurry page ${n}.</text>`;
   } else {
     main = `<text x="80" y="260" font-size="96">Catálogo alfabético</text>
       <text x="80" y="370" font-size="96">de apellidos</text>

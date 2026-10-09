@@ -34,7 +34,7 @@ export async function onRequestGet(context) {
   } else {
     q.set("w", r.word);
     title = `Can you read this 1849 surname? · Catálogo 1849`;
-    desc = `Help read page ${r.n} of the Catálogo alfabético de apellidos. Our best guess is “${r.word}”, but the scan is blurry.`;
+    desc = `Help read page ${r.n} of the Catálogo alfabético de apellidos. The OCR's best guess is “${r.word}”, but the scan is blurry.`;
   }
   card = `${url.origin}/og?${q}&v=1`;
   return new HTMLRewriter()

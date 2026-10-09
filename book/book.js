@@ -843,7 +843,7 @@ q.addEventListener("input", async () => {
   active = res.length ? 0 : -1;
   hits.innerHTML = res.length
     ? res.map(([name, pages], i) => `<li role="option" data-i="${i}" aria-selected="${i === 0}">${name}<small>p. ${pages.join(", ")}</small></li>`).join("")
-    : (v.trim() ? `<li class="none">Not in our reading of the book (yet)</li>` : "");
+    : (v.trim() ? `<li class="none">Not in the OCR reading of the book (yet)</li>` : "");
   hits.hidden = !v.trim();
 });
 q.addEventListener("keydown", e => {
@@ -907,7 +907,7 @@ function setSure(on) {
   try { localStorage.setItem("sure", on ? "1" : "0"); } catch {}
   document.getElementById("sure").setAttribute("aria-pressed", String(on));
   redrawAll();
-  if (on) toast("Faint: our best guess · Orange: blurry. Tap one to help read it.");
+  if (on) toast("Faint: the OCR's best guess · Orange: blurry. Tap one to help read it.");
 }
 
 const randomId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
@@ -942,7 +942,7 @@ async function entryAt(px, py) {
 async function openEntryAt(px, py) {
   const hit = await entryAt(px, py);
   if (!hit) return false;
-  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. We're confident about this one.`); return true; }
+  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. The OCR is confident about this one.`); return true; }
   openEntry(hit);
   return true;
 }
@@ -1007,7 +1007,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     ${CROPS && crop != null ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
       <figcaption>The scan, page ${page.n} · digitized by Google from the University of Michigan's copy · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
     <p class="small order" hidden></p>
-    ${raw && !blank ? `<p class="small">The other scan reads <b>${esc(raw)}</b>; we read <b>${esc(name)}</b>.</p>` : ""}
+    ${raw && !blank ? `<p class="small">OCR reading: <b>${esc(name)}</b> · the other scan's OCR: <b>${esc(raw)}</b></p>` : ""}
     <form class="readings" autocomplete="off">
       <p class="q">How do you read it?</p>
       <div class="opts"><p class="small">Loading…</p></div>
@@ -1051,7 +1051,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     aroundBtn.textContent = around ? "Just this line" : "Show the lines around it";
   };
   dlg.querySelector(".opts").innerHTML = res.options.length ? res.options.map(o =>
-    `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>our reading</small>` : ""}</label>`).join("")
+    `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>OCR reading</small>` : ""}</label>`).join("")
     : `<p class="small">No readings yet: type yours below.</p>`;
   form.own.addEventListener("input", () => { form.querySelectorAll("input[name=pick]").forEach(r => { r.checked = false; }); });
   form.querySelectorAll("input[name=pick]").forEach(r => r.addEventListener("change", () => { form.own.value = ""; }));
@@ -1089,7 +1089,7 @@ function showTally(options, mine, pending) {
   const box = dlg.querySelector(".tally");
   box.innerHTML = `<p class="q">${mine ? "Thanks! Here's how readers read it:" : "How readers read it so far:"}</p>` +
     (total ? list.map(o => `<div class="bar${o.r === mine ? " me" : ""}"><i style="width:${Math.round(100 * o.v / top)}%"></i>
-      <span>${esc(o.r)}${o.ours ? " <small>our reading</small>" : ""}</span><b>${o.v}</b></div>`).join("") : `<p class="small">No votes yet. Be the first!</p>`) +
+      <span>${esc(o.r)}${o.ours ? " <small>OCR reading</small>" : ""}</span><b>${o.v}</b></div>`).join("") : `<p class="small">No votes yet. Be the first!</p>`) +
     (pending ? `<p class="small">Your own reading shows here once someone else reads it the same way.</p>` : "") +
     `<p class="small">When readers agree, we check it and fix the dataset for everyone.</p>`;
   box.hidden = false;
@@ -1310,7 +1310,7 @@ async function followPath(path) {
     const res = await lookup(parts[0]);
     const hit = res.find(r => fold(r[0]) === fold(parts[0]));
     if (hit) { choose(hit); return true; }
-    toast(`“${parts[0]}” isn't in our reading of the book (yet).`);
+    toast(`“${parts[0]}” isn't in the OCR reading of the book (yet).`);
   }
   return false;
 }
