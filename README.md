@@ -118,6 +118,7 @@ The order, from votes to the published book:
 ## Further reading
 
 - Narciso Clavería's decree of 21 November 1849, and Domingo Abella's introduction, in the *Catálogo alfabético de apellidos* (National Archives of the Philippines, 1973 reprint), pp. vii–xvi.
+- Francis Alvarez Gealogo, "Looking for Claveria's Children: Church, State, Power, and the Individual in Philippine Naming Systems during the Late Nineteenth Century," in Zheng Yangwen and Charles J-H Macdonald, eds., *Personal Names in Asia: History, Culture and Identity* (Singapore: NUS Press, 2009), 37–51.
 - Norman G. Owen, "The Principalia in Philippine History: Kabikolan, 1790–1898," *Philippine Studies* 22, no. 3 (1974).
 - Ambeth R. Ocampo, "How Filipinos got their surnames," *Philippine Daily Inquirer*, 28 February 2020.
 
