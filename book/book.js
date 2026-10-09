@@ -633,6 +633,11 @@ function startTurn(dir) {
   const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
   T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
   if (closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
+  // Closing a cover: it is the only leaf on its side, so that side's stack and board go with it, not stay behind.
+  if (T.rigid && mode === "spread") {
+    if (dir < 0 && cur === 1) stackL.visible = boardL.visible = false;
+    if (dir > 0 && cur === LEAVES - 1) stackR.visible = boardR.visible = false;
+  }
   drawTurn();
   return T;
 }
