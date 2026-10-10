@@ -10,12 +10,12 @@ This is a machine-read, partly hand-checked list of the names in that book.
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
 | `checked` (confirmed or corrected on the scans, or from a source) | 94 |
-| `sure` | 11,353 |
-| `likely` | 21,237 |
-| `best_effort` | 20,970 |
-| `low` (164 of them `?`: lines no scan could read) | 4,653 |
+| `sure` | 11,716 |
+| `likely` | 21,314 |
+| `best_effort` | 20,737 |
+| `low` (153 of them `?`: lines no scan could read) | 4,446 |
 
-Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 26,118 names; where they differ (26,652), the more likely one is kept, with a third reading, from a microfilm, to break ties, and the other readings are recorded. The book prints about 60,662 names: 164 lines are here as `?` because no scan could read them, and about 1,500 are still missing.
+Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 26,118 names; where they differ (26,652), the more likely one is kept, with a third reading, from a microfilm, to break ties, and the other readings are recorded. The book prints about 60,662 names: 153 lines are here as `?` because no scan could read them, and about 1,500 are still missing.
 
 This is the first open, searchable list of the book's names that we know of. It powers the "The book" chapter of [Apelyido](https://apelyido.ruzcko.com).
 
@@ -27,7 +27,7 @@ This is the first open, searchable list of the book's names that we know of. It 
   - **Google Books**, from the **University of Michigan** library's copy: [Catálogo alfabético de apellidos](https://books.google.com/books?id=dEMvAAAAMAAJ), digitized by Google (about 4,400 pixels wide, all 141 pages).
   - The **Filipinas Heritage Library (Ayala Foundation)**: [Catálogo alfabético de apellidos on Issuu](https://issuu.com/filipinasheritagelibrary/docs/catalogo_alfabetico_de_apellidos) (910 pixels wide, 133 pages). Thank you for preserving this book and making it accessible.
   - **FamilySearch**'s microfilm of the reprint (catalogued TN-390531, filmed 2021): greyscale, about 1,500 pixels wide, all 141 pages. Used only for its text, as a third reading; its images aren't published.
-- **Transcription:** all three scans read with [Surya](https://github.com/datalab-to/surya) OCR, combined line by line, corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
+- **Transcription:** all three scans read with [Surya](https://github.com/datalab-to/surya) OCR and with a recognizer trained on the book's own typeface ([Kraken](https://kraken.re)), combined line by line, corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
 
 ### How the scans are combined
 
@@ -39,7 +39,9 @@ The copies have different blemishes (one is faded where another is clear), so th
 
 The microfilm only breaks ties: it never outvotes the other two, and it never makes a reading look surer than they did. Its greyscale often shows letters that the black-and-white scan merges, but its OCR has slips of its own (*aa* read as *an*, a final *u* as *a*), some the same as Google's (*t* as *l*, *a* as *s*). Given a full vote, it made more wrong readings `sure`, and allowed past a surname people carry today, it replaced real names with those shared slips. As a tie-break, the merge reads 62 of 94 hard entries checked by hand right (the two scans alone: 17).
 
-On the two hand-typed pages this reads 92% and 87% of names exactly (the two scans alone: 91% and 86%; the Issuu scan alone: 91% and 82%), and 85% of the names marked `sure` or `likely` are right (81% before).
+Then a second reading of every line on every scan: a [Kraken](https://kraken.re) recognizer trained on the book's own typeface, from the 58,544 line crops where all three scans' OCR read the same name. On lines it never saw it reads the hard entries checked by hand better than the general-purpose OCR on every scan (76% of them on each, against 51-74%). Its three readings and the OCR's three vote: a name three or more of the six read is kept, which changes the name but not how sure it is marked. Without the corrections, this reads 75 of the 94 hard entries right (62 before) and 572 of 617 names on the hand-typed pages (552), with one more wrong `sure` reading (18).
+
+On the two hand-typed pages this reads 92% and 93% of names exactly (the two scans alone: 91% and 86%; the Issuu scan alone: 91% and 82%), and 85% of the names marked `sure` or `likely` are right (81% before).
 
 ### How the book's order is used
 
@@ -75,6 +77,7 @@ This repository contains only the transcribed text, not the page images.
 | `status` | How much to trust it (below) |
 | `confidence` | The OCR's confidence in the line, 0–1 (empty on hand-typed pages) |
 | `google_reading`, `issuu_reading`, `familysearch_reading` | What each scan's OCR read for this line (empty where that scan has no line here) |
+| `kraken_google`, `kraken_issuu`, `kraken_familysearch` | What the recognizer trained on the book's own typeface read for this line on each scan (empty where that scan has no line here) |
 | `x0`, `y0`, `x1`, `y1` | The entry's box on Google's scan of the page, in pixels of the page drawn 2,400 × 3,882 |
 | `issuu_page`, `issuu_x0` … `issuu_y1` | The Issuu scan's page number for this book page, and the line's box on it, in pixels of the page as published there (910 wide). Empty where that scan has no line here |
 | `familysearch_x0` … `familysearch_y1` | The line's box on FamilySearch's microfilm of the page (its own page, same number as `book_page`), in pixels of the page image (about 1,500 wide). Empty where the microfilm has no line here |
