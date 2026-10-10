@@ -359,22 +359,22 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 1,,,358,abugan,hand,,,,,,,
 1,,,359,abuencia?,hand_unclear,,,,,,,
 1,,,360,abuluo?,hand_unclear,,,,,,,
-2,1,1,1,abuli,sure,0.948,abeli,,402,548,500,581
-2,1,1,2,abuli,sure,0.979,sburdo,abeli,404,589,544,617
+2,1,1,1,abeli,checked,0.948,abeli,,402,548,500,581
+2,1,1,2,aburdo,checked,0.979,sburdo,abeli,404,589,544,617
 2,1,1,3,abuda,best_effort,0.93,abuda,sburdo,402,626,523,658
-2,1,1,4,abuda,best_effort,0.99,abut,abuda,404,667,500,699
+2,1,1,4,abut,checked,0.99,abut,abuda,404,667,500,699
 2,1,1,5,abut,best_effort,0.948,abuscjo,nbut,402,709,549,743
 2,1,1,6,abuyot,low,0.593,abuyot,abasaja,404,751,540,783
-2,1,1,7,abuyot,best_effort,0.98,abulizu,abuyot,402,789,539,820
-2,1,1,8,abulizu,best_effort,0.991,abulun,abulizu,404,830,534,859
-2,1,1,9,abulun,likely,0.978,ubvo,abulun,402,870,500,900
+2,1,1,7,abulizu,checked,0.98,abulizu,abuyot,402,789,539,820
+2,1,1,8,abulun,checked,0.991,abulun,abulizu,404,830,534,859
+2,1,1,9,abvo,checked,0.978,ubvo,abulun,402,870,500,900
 2,1,1,10,abzen,best_effort,0.993,abzen,abyo,404,908,516,938
-2,1,1,11,aca,best_effort,0.972,aca,abzen,404,953,474,979
-2,1,1,12,acabo,best_effort,0.987,acabo,aca,404,990,514,1018
-2,1,1,13,acabo,best_effort,0.995,ac-ac,acabo,404,1032,506,1058
+2,1,1,11,aca,checked,0.972,aca,abzen,404,953,474,979
+2,1,1,12,acabo,checked,0.987,acabo,aca,404,990,514,1018
+2,1,1,13,ac-ac,checked,0.995,ac-ac,acabo,404,1032,506,1058
 2,1,1,14,acac,sure,0.869,acac,acac,402,1072,492,1099
-2,1,1,15,acop,best_effort,0.967,acop,,402,1114,498,1143
-2,1,1,16,acap,best_effort,0.969,academia,acap,400,1151,568,1179
+2,1,1,15,acap,checked,0.967,acop,,402,1114,498,1143
+2,1,1,16,academia,checked,0.969,academia,acap,400,1151,568,1179
 2,1,1,17,acampado,sure,0.891,acampado,,402,1196,586,1223
 2,1,1,18,acantilado,sure,0.949,acantilado,acantilado,400,1229,592,1262
 2,1,1,19,acala,sure,0.988,acala,acala,402,1267,508,1301
@@ -529,7 +529,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 2,1,3,24,adaoag,best_effort,0.886,adaoag,ndaoag,1052,1467,1188,1500
 2,1,3,25,adarne,best_effort,0.952,adurne,ndarne,1052,1505,1182,1537
 2,1,3,26,adag,best_effort,0.989,adag,ndag,1045,1540,1163,1586
-2,1,3,27,adantas,best_effort,0.979,adantos,adantas,1052,1586,1200,1618
+2,1,3,27,adantos,checked,0.979,adantos,adantas,1052,1586,1200,1618
 2,1,3,28,adarlo,best_effort,0.974,adarlo,adarla,1050,1625,1180,1657
 2,1,3,29,adnjar,best_effort,0.989,adnjar,adnjar,1050,1664,1172,1701
 2,1,3,30,adalia,sure,0.995,adalia,adalia,1050,1707,1172,1739
@@ -580,7 +580,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 2,1,4,3,adelan,sure,0.978,adelan,adelan,1372,621,1496,650
 2,1,4,4,adell,likely,0.817,bdoll,adell,1378,659,1474,691
 2,1,4,5,adelli,likely,0.85,adelli,adelli,1372,699,1485,734
-2,1,4,6,ademua,best_effort,0.935,ademus,ademua,1372,741,1517,772
+2,1,4,6,ademus,checked,0.935,ademus,ademua,1372,741,1517,772
 2,1,4,7,aderiz,likely,0.998,aderiz,aderiz,1374,781,1494,813
 2,1,4,8,adgao,likely,0.996,adgao,adgao,1376,825,1492,859
 2,1,4,9,adi,sure,0.973,adi,adi,1374,863,1444,891
@@ -2282,7 +2282,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 6,1,3,54,ananca,sure,0.986,ananca,ananca,1004,2638,1138,2667
 6,1,3,55,anatalo,likely,0.997,anatalo,anatalo,1002,2676,1146,2708
 6,1,3,56,ance,likely,0.821,ance,thice,1004,2719,1104,2748
-6,1,3,57,ancnjan,best_effort,0.938,ancajan,anenjan,1004,2759,1152,2791
+6,1,3,57,ancajan,checked,0.938,ancajan,anenjan,1004,2759,1152,2791
 6,1,3,58,ancaja,best_effort,0.972,ancaja,anenja,1004,2800,1152,2834
 6,1,3,59,ancajana,likely,0.987,ancajana,ancajana,1002,2839,1172,2872
 6,1,3,60,ancajas,best_effort,0.991,ancajas,anenjas,1002,2880,1144,2912
@@ -2998,7 +2998,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 8,1,1,51,aradela,best_effort,0.804,,an ndela,370,2434,524,2466
 8,1,1,52,araña,best_effort,0.992,araiia,araña,372,2475,480,2504
 8,1,1,53,arbas,sure,0.997,,arbas,368,2514,476,2544
-8,1,1,54,artes,best_effort,0.847,artes,arbes,370,2553,478,2585
+8,1,1,54,arbes,checked,0.847,artes,arbes,370,2553,478,2585
 8,1,1,55,arbiz,sure,0.993,arbiz,arbiz,370,2596,482,2624
 8,1,1,56,arboji,best_effort,0.995,aroon,arboji,370,2634,482,2663
 8,1,1,57,arboi,likely,0.98,arbei,arboi,370,2673,480,2702
@@ -3976,7 +3976,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 10,3,1,64,bajon,best_effort,0.85,bajon,bajon,396,3073,560,3106
 10,3,1,65,babat,sure,0.949,babat,babat,398,3110,506,3140
 10,3,1,66,?,low,0.936,,,396,3149,546,3179
-10,3,1,67,babiaco,best_effort,0.821,babaco,beliaco,398,3188,534,3220
+10,3,1,67,babaco,checked,0.821,babaco,beliaco,398,3188,534,3220
 10,3,1,68,babas,best_effort,0.889,babas,babus,396,3228,514,3260
 10,3,1,69,babuy,likely,0.85,babuy,babuy,396,3269,518,3303
 10,3,2,22,babagay,sure,0.964,habagay,habagay,710,1421,871,1461
@@ -4263,7 +4263,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 11,1,1,43,badiang,best_effort,0.976,badisag,badiang,252,2199,386,2227
 11,1,1,44,bade,best_effort,0.676,bade,bad file,248,2234,397,2271
 11,1,1,45,badholy,best_effort,0.873,pactioly,pacholy,251,2275,400,2310
-11,1,1,46,badbedu,best_effort,0.942,badbedu,badbeda,252,2312,400,2346
+11,1,1,46,badbeda,checked,0.942,badbedu,badbeda,252,2312,400,2346
 11,1,1,47,bace,best_effort,0.993,bace,bace,252,2355,336,2385
 11,1,1,48,backn,best_effort,0.949,packu,backn,252,2396,362,2425
 11,1,1,49,balon,low,0.502,bolow,bolon,244,2419,350,2471
@@ -4913,7 +4913,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 12,1,4,48,baliquid-dao,likely,0.991,baliquid-dao,baliquid-dao,1323,2348,1543,2380
 12,1,4,49,balanoyco,likely,0.993,balanoyco,balanoyco,1321,2383,1506,2423
 12,1,4,50,balictaren,best_effort,0.991,balicturen,balictaren,1322,2423,1507,2459
-12,1,4,51,balinghusa,best_effort,0.993,balinghasa,balinghusa,1320,2460,1519,2507
+12,1,4,51,balinghasa,checked,0.993,balinghasa,balinghusa,1320,2460,1519,2507
 12,1,4,52,balodnapor,likely,0.891,paloquapo,balodnapor,1322,2501,1512,2539
 12,1,4,53,balichalie,best_effort,0.905,balichalie,halichalie,1321,2538,1500,2578
 12,1,4,54,balichitan,best_effort,0.96,bolichitan,balichitan,1324,2581,1500,2615
@@ -5222,7 +5222,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 13,1,2,72,baligaguio,likely,0.992,baligaguio,baligaguio,598,3282,788,3317
 13,1,3,1,baliguhan,best_effort,0.987,baliguhas,baliguhan,898,511,1077,551
 13,1,3,2,balintage,likely,0.922,balintato,balintage,901,552,1083,583
-13,1,3,3,balicalio,best_effort,0.925,balicalio,balioalio,900,584,1055,619
+13,1,3,3,balioalio,checked,0.925,balicalio,balioalio,900,584,1055,619
 13,1,3,4,baliogdahan,best_effort,0.979,balingdahan,baliogdahan,902,627,1116,662
 13,1,3,5,baliquidiquit,likely,0.986,baliquidiquit,baliquidiquit,900,663,1121,701
 13,1,3,6,balitdilit,likely,0.981,balitdilit,balitdilit,900,703,1054,735
@@ -5468,7 +5468,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 13,1,6,30,bancer,low,0.545,pancer,bancau,1852,1640,2006,1673
 13,1,6,31,bancoc,best_effort,0.985,bencoc,bancoc,1852,1680,1984,1708
 13,1,6,32,bantag,sure,0.996,bantag,bantag,1846,1718,1980,1748
-13,1,6,33,bantac,best_effort,0.932,bantuc,bantac,1852,1756,1980,1786
+13,1,6,33,bantuc,checked,0.932,bantuc,bantac,1852,1756,1980,1786
 13,1,6,34,bantul,likely,0.972,bantul,bantul,1852,1794,1974,1824
 13,1,6,35,banuad,likely,0.993,banuad,banuad,1852,1835,1986,1863
 13,1,6,36,banue,likely,0.964,banue,banue,1856,1875,1994,1903
@@ -5606,7 +5606,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 14,1,2,24,bancalbiang,likely,0.948,bancalbiang,bancalbiang,718,1438,932,1472
 14,1,2,25,bangaolasio,best_effort,0.989,baugnolasi,baugaolasio,719,1479,930,1514
 14,1,2,26,banlany,best_effort,0.967,banlany,banlaoy,718,1518,869,1553
-14,1,2,27,banaganod,best_effort,0.837,bamaganod,bam ignaod,722,1559,924,1592
+14,1,2,27,bamaganod,checked,0.837,bamaganod,bam ignaod,722,1559,924,1592
 14,1,2,28,bangalando,best_effort,0.992,bangalandu,bangalando,722,1600,924,1634
 14,1,2,29,bangquet,best_effort,0.963,bangquet,banequet,718,1638,891,1672
 14,1,2,30,bandaysa,likely,0.996,bandaysa,bandaysa,719,1678,893,1712
@@ -5622,7 +5622,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 14,1,2,40,banlinano,likely,0.989,banlinano,banlinano,722,2078,900,2111
 14,1,2,41,banapuri,likely,0.996,banapuri,banapuri,720,2120,885,2151
 14,1,2,42,banabaldo,likely,0.995,banabaldo,banabaldo,722,2159,908,2192
-14,1,2,43,banabayong,best_effort,0.975,banabayong,banaboyong,720,2196,942,2235
+14,1,2,43,banaboyong,checked,0.975,banabayong,banaboyong,720,2196,942,2235
 14,1,2,44,banagbis,likely,0.943,banagbis,banagbis,722,2240,908,2274
 14,1,2,45,banagasoc,likely,0.986,banagasoc,banagasoc,721,2281,920,2312
 14,1,2,46,banalubit,likely,0.971,banalubit,banalubit,724,2321,890,2349
@@ -5638,7 +5638,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 14,1,2,56,banandid,likely,0.97,banandid,banandid,722,2718,893,2753
 14,1,2,57,banandiel,likely,0.992,banandiel,banandiel,724,2759,914,2794
 14,1,2,58,banumbicy,best_effort,0.978,banumbicy,banumbley,722,2797,925,2835
-14,1,2,59,bangayciso,best_effort,0.958,baugayciso,bangayciso,722,2843,920,2876
+14,1,2,59,baugayciso,checked,0.958,baugayciso,bangayciso,722,2843,920,2876
 14,1,2,60,bangalmos,likely,0.993,bangalmos,bangalmos,722,2883,912,2918
 14,1,2,61,banganta,likely,0.991,banganta,banganta,720,2918,899,2957
 14,1,2,62,bangausa,likely,0.995,bangausa,bangausa,721,2960,898,2996
@@ -6342,11 +6342,11 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 15,1,6,41,batoquis,likely,0.994,batoquis,batoquis,1819,2084,1982,2120
 15,1,6,42,batovalani,likely,0.939,batovalani,batovalani,1820,2125,2012,2157
 15,1,6,43,batug-ga,likely,0.991,batug-ga,batug-ga,1819,2164,1987,2202
-15,1,6,44,batoneu,best_effort,0.982,batoncu,batoneu,1819,2202,1969,2235
+15,1,6,44,batoncu,checked,0.982,batoncu,batoneu,1819,2202,1969,2235
 15,1,6,45,batalona,sure,0.994,batalona,batalona,1822,2240,1993,2275
 15,1,6,46,bataclic,likely,0.967,bataclic,bataclic,1822,2281,1966,2316
 15,1,6,47,batungmati,best_effort,0.991,batangmati,batungmati,1826,2324,2026,2358
-15,1,6,48,batangantun,best_effort,0.987,batangantan,batangantun,1825,2361,2038,2398
+15,1,6,48,batangantan,checked,0.987,batangantan,batangantun,1825,2361,2038,2398
 15,1,6,49,battasag,best_effort,0.831,bottarac,bistasag,1825,2396,1967,2434
 15,1,6,50,batimuri,likely,0.99,batimuri,batimuri,1828,2436,1999,2472
 15,1,6,51,baticoiunts,best_effort,0.907,basicoiunts,balicgianta,1828,2476,2022,2513
@@ -6406,7 +6406,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,1,33,batchalolosc,best_effort,0.887,batobatolosc,batchalolosc,418,1789,638,1817
 16,1,1,34,batnoaanos,best_effort,0.955,batnoaanos,batnoalanos,418,1828,632,1858
 16,1,1,35,bateculo,likely,0.93,batec ulo,batec ulo,418,1869,590,1898
-16,1,1,36,batocanguang,best_effort,0.983,batocangtang,batocanguang,419,1909,662,1943
+16,1,1,36,batocangtang,checked,0.983,batocangtang,batocanguang,419,1909,662,1943
 16,1,1,37,batalanguis,best_effort,0.992,patringais,batalanguis,415,1945,633,1984
 16,1,1,38,batiogao,best_effort,0.961,batiogao,batingao,416,1985,583,2025
 16,1,1,39,batolenio,likely,0.994,batolenio,batolenio,420,2027,586,2057
@@ -6547,7 +6547,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,3,31,bayalas,best_effort,0.993,bayales,bayalas,1066,1710,1213,1747
 16,1,3,32,bayahas,likely,0.993,bayahas,bayahas,1067,1750,1222,1785
 16,1,3,33,bayad-na,likely,0.948,bayad-na,bayad-na,1070,1792,1242,1825
-16,1,3,34,bayagms,best_effort,0.968,bayagms,bayagma,1066,1831,1238,1868
+16,1,3,34,bayagma,checked,0.968,bayagms,bayagma,1066,1831,1238,1868
 16,1,3,35,bayato,best_effort,0.995,baysto,bayato,1068,1873,1198,1907
 16,1,3,36,bayateng,likely,0.996,bayateng,bayateng,1068,1911,1251,1946
 16,1,3,37,baybayen,likely,0.986,baybayen,baybayen,1066,1947,1245,1985
@@ -6677,7 +6677,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,5,17,becada,sure,0.933,becada,becada,1714,1152,1854,1188
 16,1,5,18,becard,likely,0.962,becard,becard,1716,1195,1848,1222
 16,1,5,19,becares,sure,0.994,becares,becares,1716,1235,1860,1265
-16,1,5,20,beccer,best_effort,0.981,beccer,beccar,1716,1273,1855,1304
+16,1,5,20,beccar,checked,0.981,beccer,beccar,1716,1273,1855,1304
 16,1,5,21,becas,likely,0.973,becas,becas,1718,1312,1826,1338
 16,1,5,22,becasanan,likely,0.969,becasanan,becasanan,1718,1352,1900,1379
 16,1,5,23,becasan,likely,0.968,bocasan,bocasan,1717,1390,1870,1420
@@ -6691,7 +6691,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,5,31,becerril,best_effort,0.905,becerril,baeerril,1720,1709,1868,1741
 16,1,5,32,becerro,sure,0.982,becerro,becerro,1717,1750,1860,1780
 16,1,5,33,beceyte,likely,0.961,beceyte,beceyte,1722,1791,1860,1823
-16,1,5,34,bechaeino,best_effort,0.959,bechaeino,bechacino,1722,1829,1903,1861
+16,1,5,34,bechacino,checked,0.959,bechaeino,bechacino,1722,1829,1903,1861
 16,1,5,35,becher,sure,0.988,becher,becher,1724,1869,1846,1901
 16,1,5,36,becin,likely,0.977,becin,becin,1722,1908,1827,1940
 16,1,5,37,becinte,likely,0.993,becinte,becinte,1720,1948,1857,1980
@@ -6721,7 +6721,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,5,61,begonit,best_effort,0.705,begons,begon it,1719,2906,1871,2953
 16,1,5,62,beguda,likely,0.915,heguda,heguda,1721,2949,1864,2989
 16,1,5,63,beguela,best_effort,0.976,beguela,begue a,1724,2992,1866,3030
-16,1,5,64,begner,best_effort,0.959,peaner,beguer,1724,3034,1862,3069
+16,1,5,64,beguer,checked,0.959,peaner,beguer,1724,3034,1862,3069
 16,1,5,65,begurithin,likely,0.986,begurithin,begurithin,1719,3064,1911,3112
 16,1,5,66,beira,sure,0.979,beira,beira,1724,3112,1828,3142
 16,1,5,67,bettin,low,0.996,bettia,bettin,1724,3148,1832,3184
@@ -6760,7 +6760,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 16,1,6,28,belchit,best_effort,0.964,belchit,belchie,2044,1588,2190,1622
 16,1,6,29,belda,best_effort,0.979,beld,belda,2030,1628,2146,1662
 16,1,6,30,belaad,best_effort,0.99,beland,belaad,2042,1669,2167,1701
-16,1,6,31,beldeniss,best_effort,0.969,beldeniss,beldenisa,2044,1709,2218,1743
+16,1,6,31,beldenisa,checked,0.969,beldeniss,beldenisa,2044,1709,2218,1743
 16,1,6,32,beldan,best_effort,0.907,beldin,beldan,2044,1748,2158,1780
 16,1,6,33,belen,sure,0.973,belen,belen,2040,1784,2155,1824
 16,1,6,34,belesan,likely,0.984,belesan,belesan,2043,1824,2188,1863
@@ -7334,7 +7334,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 18,1,2,28,bilitors,likely,0.994,bilitors,bilitors,742,1523,881,1561
 18,1,2,29,bilonu,best_effort,0.996,bilona,bilonu,738,1565,860,1595
 18,1,2,30,biloghilot,likely,0.983,biloghilol,biloghilot,744,1603,915,1641
-18,1,2,31,bilocura,best_effort,0.6,bilocura,bilocora,744,1643,887,1675
+18,1,2,31,bilocora,checked,0.6,bilocura,bilocora,744,1643,887,1675
 18,1,2,32,bilacaol,likely,0.961,hilacaol,bilacaol,741,1677,890,1717
 18,1,2,33,bilotbira,likely,0.994,bilotbira,bilotbira,744,1718,899,1753
 18,1,2,34,bilotindes,likely,0.974,bilotindes,bilotindes,744,1758,915,1791
@@ -7839,7 +7839,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 19,1,3,32,bocbocio,best_effort,0.886,borbocio,boebocio,929,1728,1088,1763
 19,1,3,33,bocó,best_effort,0.974,boc,bocó,932,1770,1022,1800
 19,1,3,34,bocod,best_effort,0.967,borod,bocod,932,1810,1044,1839
-19,1,3,35,bocket,best_effort,0.981,boclet,bocket,932,1845,1048,1879
+19,1,3,35,boclet,checked,0.981,boclet,bocket,932,1845,1048,1879
 19,1,3,36,bocbocela,likely,0.971,bocbocela,bocbocela,932,1884,1106,1917
 19,1,3,37,bocling,best_effort,0.963,bocling,booling,929,1920,1070,1959
 19,1,3,38,boclor,likely,0.987,boclor,boclor,932,1965,1052,1994
@@ -8316,7 +8316,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 20,1,4,5,biotanas,best_effort,0.987,liotanas,liotanas,1351,658,1492,691
 20,1,4,6,botaire,sure,0.992,botaire,botaire,1350,699,1476,726
 20,1,4,7,botaslac,likely,0.995,botaslac,botaslac,1348,737,1496,766
-20,1,4,8,botayn,best_effort,0.993,botaya,botayn,1348,777,1476,809
+20,1,4,8,botaya,checked,0.993,botaya,botayn,1348,777,1476,809
 20,1,4,9,botavara,sure,0.979,botavara,botavara,1348,816,1508,843
 20,1,4,10,bothut,best_effort,0.933,bothut,botbot,1350,852,1468,882
 20,1,4,11,bote,best_effort,0.975,botc,bote,1350,894,1434,921
@@ -8453,7 +8453,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 20,1,5,70,briguera,sure,0.872,tzigueta,leiguera,1672,3244,1820,3279
 20,1,5,71,brigoli,best_effort,0.751,brigoli,bngoli,1668,3280,1802,3319
 20,1,6,1,brigola,best_effort,0.989,brigole,brigola,1994,498,2122,531
-20,1,6,2,bribuega,best_effort,0.972,bribuega,brihuega,1992,540,2153,573
+20,1,6,2,brihuega,checked,0.972,bribuega,brihuega,1992,540,2153,573
 20,1,6,3,brillantes,best_effort,0.983,brillantes-,brillantes,1993,575,2166,614
 20,1,6,4,bricon,low,0.456,tricon,bricon,1991,616,2123,650
 20,1,6,5,briboneria,sure,0.995,briboneria,briboneria,1992,654,2178,692
@@ -8496,7 +8496,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 20,1,6,42,bromeo,sure,0.92,vromeo,bromeo,1990,2108,2126,2137
 20,1,6,43,brong,low,0.405,stigl,tring,1987,2140,2144,2180
 20,1,6,44,broncatio,best_effort,0.893,oroncati,ofencatio,1983,2181,2176,2262
-20,1,6,45,brolagdani,best_effort,0.943,brolagdan,brolagdani,1984,2256,2176,2306
+20,1,6,45,brolagdan,checked,0.943,brolagdan,brolagdani,1984,2256,2176,2306
 20,1,6,46,bronia,best_effort,0.949,bronia,bronta,1990,2303,2170,2335
 20,1,6,47,brondo,sure,0.955,brondo,brondo,1986,2337,2202,2380
 20,1,6,48,brolagd,best_effort,0.815,brolagd,brolugda ana,1986,2380,2202,2422
@@ -8589,7 +8589,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 21,1,1,64,bucsig,likely,0.975,bucsig,bucsig,323,2991,446,3029
 21,1,1,65,buch,best_effort,0.928,buch,bucn,326,3031,442,3059
 21,1,1,66,bucain,best_effort,0.965,bucain,bucuin,326,3071,450,3099
-21,1,1,67,buculu,best_effort,0.905,bucalu,buculu,328,3108,446,3137
+21,1,1,67,bucalu,checked,0.905,bucalu,buculu,328,3108,446,3137
 21,1,1,68,buculbiai,best_effort,0.912,buculbiai,ucalbini,336,3144,486,3177
 21,1,1,69,becall,best_effort,0.883,becall,becall,326,3184,458,3216
 21,1,1,70,bucadan,likely,0.938,bucadan,bucadan,326,3222,475,3254
@@ -8611,7 +8611,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 21,1,2,15,bucashucat,best_effort,0.925,bucashucat,bucasbucat,627,1058,841,1089
 21,1,2,16,buclatan,best_effort,0.956,buclatan,buclaten,628,1097,784,1126
 21,1,2,17,bucking,likely,0.981,backing,backing,624,1130,767,1171
-21,1,2,18,buccita,best_effort,0.961,buccita,bucsita,628,1173,758,1207
+21,1,2,18,bucsita,checked,0.961,buccita,bucsita,628,1173,758,1207
 21,1,2,19,bucaco,likely,0.98,bucaco,bucaco,628,1214,760,1243
 21,1,2,20,bucalcai,best_effort,0.94,bucalcul,bucalcai,596,1248,813,1284
 21,1,2,21,bucalun,likely,0.947,bucalun,bucalun,630,1290,772,1320
@@ -8787,7 +8787,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 21,1,4,48,bulena,likely,0.991,bulena,bulena,1268,2339,1394,2371
 21,1,4,49,bulgan,sure,0.99,bulgan,bulgan,1266,2377,1398,2416
 21,1,4,50,bulgarla,best_effort,0.991,bulgaria,bulgarla,1268,2417,1420,2451
-21,1,4,51,bulindanon,likely,0.958,bulindanan,unlindanon,1270,2455,1464,2488
+21,1,4,51,bulindanan,checked,0.958,bulindanan,unlindanon,1270,2455,1464,2488
 21,1,4,52,bullbay,best_effort,0.828,bullbay,bulisay,1266,2491,1404,2529
 21,1,4,53,bultoit,best_effort,0.913,buttoit,bulnoit,1268,2533,1397,2565
 21,1,4,54,bullised,low,0.419,hullised,,1265,2570,1405,2606
@@ -8873,7 +8873,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 21,1,5,62,bulabar,likely,0.99,bulabar,bulabar,1582,2878,1720,2912
 21,1,5,63,bulaan,sure,0.977,bulaan,bulaan,1582,2915,1708,2951
 21,1,5,64,bulaclio,best_effort,0.947,buluclio,bulaclio,1582,2957,1748,2991
-21,1,5,65,bulacianos,likely,0.977,bulaciados,bulacianos,1582,2996,1770,3029
+21,1,5,65,bulaciados,checked,0.977,bulaciados,bulacianos,1582,2996,1770,3029
 21,1,5,66,bulachiong,best_effort,0.955,bulachiong,bulichiong,1580,3035,1774,3069
 21,1,5,67,bulagaorgon,likely,0.992,bulagaorgon,bulagaorgon,1582,3076,1798,3110
 21,1,5,68,bulagsac,best_effort,0.947,bulagsac,bulagsuc,1578,3112,1738,3149
@@ -9136,11 +9136,11 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 22,1,4,23,busalanan,best_effort,0.978,boralanan,busalanan,1332,1329,1515,1362
 22,1,4,24,busu-rlacg,best_effort,0.959,busu-rlacg,busu-alacg,1331,1366,1538,1403
 22,1,4,25,buscag-an,best_effort,0.947,buscar-an,buscag-an,1334,1410,1518,1438
-22,1,4,26,butac,sure,0.994,butac,butac,1335,1445,1458,1477
-22,1,4,27,butacan,best_effort,0.922,butacen,butacan,1333,1484,1476,1514
-22,1,4,28,butanilan,best_effort,0.958,butanilau,butanilan,1336,1525,1506,1553
-22,1,4,29,butay,sure,0.992,butay,butay,1331,1559,1454,1598
-22,1,4,30,butayung,best_effort,0.994,busayang,busayung,1332,1602,1511,1637
+22,1,4,26,butac,checked,0.994,butac,butac,1335,1445,1458,1477
+22,1,4,27,butacan,checked,0.922,butacen,butacan,1333,1484,1476,1514
+22,1,4,28,butanilan,checked,0.958,butanilau,butanilan,1336,1525,1506,1553
+22,1,4,29,butay,checked,0.992,butay,butay,1331,1559,1454,1598
+22,1,4,30,busayung,checked,0.994,busayang,busayung,1332,1602,1511,1637
 22,1,4,31,butardo,sure,0.994,butardo,butardo,1338,1641,1476,1669
 22,1,4,32,buted,sure,0.992,buted,buted,1334,1679,1442,1708
 22,1,4,33,butel,best_effort,0.954,batel,butel,1336,1717,1436,1747
@@ -9235,7 +9235,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 22,1,6,16,buypib,likely,0.913,,buypib,1980,1061,2108,1095
 22,1,6,17,buyunás,likely,0.871,buyunaa,bnyunás,1978,1101,2139,1136
 22,1,6,18,buyers,best_effort,0.947,buyers,buyerns,1975,1140,2125,1173
-22,1,6,19,buyrs,best_effort,0.961,bayrs,buyra,1972,1178,2090,1218
+22,1,6,19,buyra,checked,0.961,bayrs,buyra,1972,1178,2090,1218
 22,1,6,20,buyomang,best_effort,0.989,bayomeng,buyomang,1976,1217,2163,1252
 22,1,6,21,buyonas,likely,0.985,buyonas,buyonas,1976,1256,2129,1289
 22,1,6,22,buyjalin,likely,0.996,buyjalin,buyjalin,1975,1295,2126,1330
@@ -9254,7 +9254,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 22,1,6,35,buyagyag,best_effort,0.924,buyagyag,buyngyag,1980,1800,2158,1838
 22,1,6,36,buylepan,best_effort,0.941,buglepan,buylepan,1980,1839,2144,1875
 22,1,6,37,buytiong,likely,0.993,buytiong,buytiong,1978,1880,2143,1914
-22,1,6,38,buyleng,best_effort,0.949,bayleng,buyteng,1977,1918,2141,1956
+22,1,6,38,buyteng,checked,0.949,bayleng,buyteng,1977,1918,2141,1956
 22,1,6,39,buyturong,likely,0.963,wirthtoud,buyturong,1977,1957,2171,1995
 22,1,6,40,buying,likely,0.842,buyunda,buying,1980,1998,2136,2031
 22,1,6,41,buysti,best_effort,0.933,bursti,burffi,1982,2034,2108,2067
@@ -9691,7 +9691,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 23,1,5,40,cabiaan,sure,0.983,cabiaan,cabiaan,1576,2004,1725,2044
 23,1,5,41,cabibihan,likely,0.995,cabibihan,cabibihan,1576,2044,1757,2084
 23,1,5,42,cabili,best_effort,0.899,abili,cabili,1580,2085,1686,2121
-23,1,5,43,cabigeabig,best_effort,0.975,cabigcabig,cabigeabig,1570,2122,1774,2171
+23,1,5,43,cabigcabig,checked,0.975,cabigcabig,cabigeabig,1570,2122,1774,2171
 23,1,5,44,cabiguin,sure,0.971,cabiguin,cabiguin,1572,2161,1744,2208
 23,1,5,45,cabiganatin,best_effort,0.988,cabigunatin,cabiganatin,1571,2199,1786,2250
 23,1,5,46,cabigquis,likely,0.997,cabigquis,cabigquis,1574,2242,1751,2282
@@ -10132,7 +10132,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 24,1,5,51,crplace,low,0.377,,or place,1662,2470,1805,2518
 24,1,5,52,cajlung,best_effort,0.98,cajlung,callung,1666,2516,1807,2553
 24,1,5,53,cajule,best_effort,0.808,cnjule,cajute,1670,2557,1800,2590
-24,1,5,54,cajitoe,best_effort,0.975,cajitoc,enjitoe,1661,2594,1819,2634
+24,1,5,54,cajitoc,checked,0.975,cajitoc,enjitoe,1661,2594,1819,2634
 24,1,5,55,cajutao,best_effort,0.96,cejuteo,cajutao,1666,2636,1811,2673
 24,1,5,56,cajara,best_effort,0.758,cujara,cajara,1668,2677,1797,2710
 24,1,5,57,cajumay,likely,0.985,cajumay,cajumay,1670,2713,1830,2751
@@ -10706,7 +10706,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 26,1,1,54,calunod,sure,0.951,calunod,calunod,344,2620,484,2652
 26,1,1,55,calupad,sure,0.931,colupad,celupad,343,2660,494,2693
 26,1,1,56,caluyo,sure,0.804,aluyo,caluyo,342,2694,480,2738
-26,1,1,57,caloscosso,best_effort,0.962,coloscosso,caloscosao,345,2740,538,2772
+26,1,1,57,caloscosao,checked,0.962,coloscosso,caloscosao,345,2740,538,2772
 26,1,1,58,calubad,best_effort,0.979,calubaa,calubad,346,2780,498,2813
 26,1,1,59,calda,sure,0.997,calda,calda,344,2820,454,2853
 26,1,1,60,caldo,sure,0.99,caldo,caldo,346,2860,456,2893
@@ -10807,7 +10807,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 26,1,3,11,camasetia,best_effort,0.738,poinased,oumasetia,987,889,1167,922
 26,1,3,12,camat,sure,0.977,chmat,chmat,988,930,1109,960
 26,1,3,13,camato,sure,0.996,camato,camato,988,974,1128,999
-26,1,3,14,camaruma,likely,0.953,camarama,camaruma,990,1016,1188,1042
+26,1,3,14,camarama,checked,0.953,camarama,camaruma,990,1016,1188,1042
 26,1,3,15,camay,sure,0.998,camay,camay,990,1057,1118,1087
 26,1,3,16,camarador,sure,0.996,camarador,camarador,992,1093,1182,1122
 26,1,3,17,camatora,likely,0.994,camatora,camatora,992,1134,1184,1162
@@ -10853,7 +10853,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 26,1,3,57,camayray,best_effort,0.974,cumayray,camayray,1000,2743,1182,2775
 26,1,3,58,camain,best_effort,0.992,camaiu,camain,996,2780,1159,2813
 26,1,3,59,camayandin,likely,0.998,camayandin,camayandin,998,2818,1221,2857
-26,1,3,60,camayaala,best_effort,0.971,camayaala,camaysala,996,2857,1209,2896
+26,1,3,60,camaysala,checked,0.971,camayaala,camaysala,996,2857,1209,2896
 26,1,3,61,camayesain,best_effort,0.789,camayes ain,camaysagin,998,2903,1212,2936
 26,1,3,62,camaysahanan,likely,0.995,camaysahanan,camaysahanan,996,2938,1267,2979
 26,1,3,63,camantigui,likely,0.991,camantigui,camantigui,1002,2982,1216,3016
@@ -10991,7 +10991,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 26,1,5,51,camarista,sure,0.986,camarista,camarista,1651,2543,1834,2578
 26,1,5,52,camarote,best_effort,0.997,comarote,camarote,1652,2587,1822,2615
 26,1,5,53,cambiado,sure,0.997,cambiado,cambiado,1652,2624,1828,2657
-26,1,5,54,cambieca,best_effort,0.986,cambieca,cambisca,1652,2663,1826,2699
+26,1,5,54,cambisca,checked,0.986,cambieca,cambisca,1652,2663,1826,2699
 26,1,5,55,camoriista,likely,0.857,camoriista,camoriista,1652,2707,1842,2737
 26,1,5,56,campiña,likely,0.985,campiña,campiña,1650,2744,1814,2780
 26,1,5,57,camilote,sure,0.995,camilote,camilote,1652,2786,1824,2819
@@ -11627,7 +11627,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 28,1,2,46,caranay,best_effort,0.987,carabay,caranay,700,2301,836,2330
 28,1,2,47,caranuyao,best_effort,0.966,carenayao,caranuyao,700,2342,884,2369
 28,1,2,48,carandang,best_effort,0.996,carandung,carandang,697,2376,896,2416
-28,1,2,49,carurandan,best_effort,0.973,carurandan,cararandan,699,2417,908,2449
+28,1,2,49,cararandan,checked,0.973,carurandan,cararandan,699,2417,908,2449
 28,1,2,50,carangan,best_effort,0.992,carabgan,carangan,700,2462,874,2494
 28,1,2,51,caraos,best_effort,0.985,carsos,caraos,700,2503,828,2529
 28,1,2,52,carhosbo,best_effort,0.939,cursosso,chthosbo,700,2543,864,2568
@@ -12084,7 +12084,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 29,1,3,3,casiano,sure,0.982,casiano,casiano,924,619,1058,647
 29,1,3,4,casndac,best_effort,0.802,msindac,maindac,920,653,1081,690
 29,1,3,5,casiguran,sure,0.979,edsiguran,edsiguran,920,694,1095,732
-29,1,3,6,casigdan,best_effort,0.971,casigdan,casigdun,917,731,1079,767
+29,1,3,6,casigdun,checked,0.971,casigdan,casigdun,917,731,1079,767
 29,1,3,7,casillas,low,0.557,canillas,casillas,920,772,1062,804
 29,1,3,8,casinos,best_effort,0.941,carinos,casinos,915,811,1052,842
 29,1,3,9,casenoran,likely,0.936,casenoran,casenoran,915,852,1092,883
@@ -12312,7 +12312,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 29,1,6,16,catadman,best_effort,0.625,catadman,catudman,1855,1146,2031,1184
 29,1,6,17,catadmout,likely,0.948,catadmou,catadmout,1856,1181,2036,1223
 29,1,6,18,catada,sure,0.996,catada,catada,1850,1223,1998,1262
-29,1,6,19,catedoc,best_effort,0.988,catedoc,catadoc,1853,1263,1997,1299
+29,1,6,19,catadoc,checked,0.988,catedoc,catadoc,1853,1263,1997,1299
 29,1,6,20,catugusan,likely,0.954,catugusan,catugusan,1850,1304,2035,1343
 29,1,6,21,catagan,best_effort,0.971,catogan,catagan,1848,1344,2015,1383
 29,1,6,22,cataggtan,best_effort,0.959,catnggtan,cataggtan,1850,1383,2029,1423
@@ -12460,7 +12460,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 30,1,2,20,catingting,likely,0.987,cutingting,cutingting,754,1278,941,1313
 30,1,2,21,catli,best_effort,0.987,cutli,catli,758,1317,850,1344
 30,1,2,22,catliame,likely,0.992,catliame,catliame,756,1351,913,1384
-30,1,2,23,catillar,best_effort,0.99,catilar,catillar,758,1391,882,1423
+30,1,2,23,catilar,checked,0.99,catilar,catillar,758,1391,882,1423
 30,1,2,24,catuon,best_effort,0.829,catuon,cutuon,760,1430,898,1462
 30,1,2,25,catoira,best_effort,0.971,catoira,entoira,762,1472,888,1501
 30,1,2,26,catolos,best_effort,0.97,catoliss,catolos,760,1511,898,1540
@@ -12475,7 +12475,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 30,1,2,35,catimbangbang,likely,0.99,catimbangbang,catimbangbang,760,1852,1033,1893
 30,1,2,36,catoyun,best_effort,0.938,cutnyun,catoyun,764,1895,908,1923
 30,1,2,37,catilingban,likely,0.984,catilingban,catilingban,764,1930,964,1965
-30,1,2,38,catinguran,best_effort,0.995,catinguran,catingaran,759,1967,954,2006
+30,1,2,38,catingaran,checked,0.995,catinguran,catingaran,759,1967,954,2006
 30,1,2,39,catllo,likely,0.994,catllo,catllo,762,2005,870,2035
 30,1,2,40,catlloque,likely,0.984,catlloque,catlloque,758,2040,935,2084
 30,1,2,41,catoncan,likely,0.989,catoncan,catoncan,762,2087,924,2114
@@ -12515,7 +12515,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 30,1,3,3,catil,sure,0.996,catil,catil,1068,616,1156,648
 30,1,3,4,catilogo,sure,0.992,catilogo,catilogo,1064,652,1231,694
 30,1,3,5,catibaytihayan,best_effort,0.965,cutibaytihayan,estibaytibayan,1068,696,1326,730
-30,1,3,6,catigusan,best_effort,0.987,catigusan,catigasan,1065,733,1238,769
+30,1,3,6,catigasan,checked,0.987,catigusan,catigasan,1065,733,1238,769
 30,1,3,7,catilianau,best_effort,0.988,catilianau,catilianan,1069,775,1244,804
 30,1,3,8,catibin,likely,0.997,catibin,catibin,1068,811,1200,843
 30,1,3,9,catiyean,likely,0.974,catiyean,catiyean,1068,851,1227,885
@@ -12971,7 +12971,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 31,2,3,28,cerad,likely,0.972,cerad,cerad,780,1659,898,1691
 31,2,3,29,cerafica,sure,0.99,cerafica,cerafica,780,1697,930,1730
 31,2,3,30,cerapion,likely,0.994,cerapion,cerapion,780,1739,942,1771
-31,2,3,31,ceranie,best_effort,0.995,cerane,ceranie,780,1780,918,1808
+31,2,3,31,cerane,checked,0.995,cerane,ceranie,780,1780,918,1808
 31,2,3,32,cerbafia,likely,0.994,cerbafia,cerbafia,780,1814,934,1851
 31,2,3,33,cerbas,sure,0.975,cerbas,cerbas,780,1855,908,1888
 31,2,3,34,cerbeto,likely,0.982,cerbeto,cerbeto,780,1895,920,1927
@@ -13033,7 +13033,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 31,2,4,18,cerut,best_effort,0.99,cerut,ceint,1110,1263,1218,1292
 31,2,4,19,ceremonia,sure,0.996,ceremonia,ceremonia,1109,1303,1295,1330
 31,2,4,20,cerrado,sure,0.997,cerrado,cerrado,1109,1340,1253,1370
-31,2,4,21,cerradora,best_effort,0.995,cerradura,cerradora,1110,1383,1290,1411
+31,2,4,21,cerradura,checked,0.995,cerradura,cerradora,1110,1383,1290,1411
 31,2,4,22,cerragero,likely,0.996,cerragero,cerragero,1112,1424,1292,1457
 31,2,4,23,cerrazon,likely,0.987,cerrazon,cerrazon,1107,1462,1274,1492
 31,2,4,24,certeza,best_effort,0.987,certeza,certezu,1112,1502,1252,1530
@@ -13085,7 +13085,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 31,2,4,70,cha,sure,0.993,cha,cha,1116,3317,1198,3350
 31,2,4,71,chal,likely,0.969,chal,chal,1116,3357,1230,3390
 31,2,4,72,chalan,best_effort,0.997,chaian,chalan,1116,3396,1252,3429
-31,2,5,1,charens,best_effort,0.993,chareas,charens,1436,596,1578,628
+31,2,5,1,chareas,checked,0.993,chareas,charens,1436,596,1578,628
 31,2,5,2,chaparro,best_effort,0.954,chaparro,ehaparro,1436,637,1604,667
 31,2,5,3,chamos,sure,0.974,chamos,chamos,1436,675,1580,703
 31,2,5,4,chato,sure,0.997,chato,chato,1436,712,1546,741
@@ -13162,7 +13162,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 31,2,6,3,chocolate,best_effort,0.993,chocolete,chocolate,1756,671,1928,700
 31,2,6,4,cholvé,likely,0.977,cholvé,cholvé,1756,707,1886,740
 31,2,6,5,chonet,best_effort,0.992,chonat,chonet,1756,749,1888,778
-31,2,6,6,chosre,best_effort,0.978,chosre,chofre,1756,786,1878,819
+31,2,6,6,chofre,checked,0.978,chosre,chofre,1756,786,1878,819
 31,2,6,7,choner,likely,0.994,choner,choner,1756,830,1896,859
 31,2,6,8,chornet,likely,0.996,chornet,chornet,1754,867,1897,898
 31,2,6,9,chorut,likely,0.978,chorut,chorut,1754,907,1902,935
@@ -13454,7 +13454,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 32,1,4,11,cocoracha,likely,0.997,cocoracha,cocoracha,1418,955,1592,985
 32,1,4,12,coceldo,likely,0.996,coceldo,coceldo,1418,992,1564,1026
 32,1,4,13,codecido,likely,0.994,codecido,codecido,1418,1033,1578,1065
-32,1,4,14,codesal,best_effort,0.984,codosal,codesal,1418,1072,1554,1105
+32,1,4,14,codosal,checked,0.984,codosal,codesal,1418,1072,1554,1105
 32,1,4,15,codes,sure,0.979,codes,codes,1418,1111,1530,1144
 32,1,4,16,codeso,likely,0.989,codeso,codeso,1417,1151,1545,1180
 32,1,4,17,codia,sure,0.996,codia,codia,1420,1186,1524,1221
@@ -13477,7 +13477,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 32,1,4,34,codcoran,likely,0.977,codcoran,codcoran,1426,1851,1592,1887
 32,1,4,35,codiamat,sure,0.995,codiamat,codiamat,1426,1890,1594,1926
 32,1,4,36,codlit,likely,0.982,codlit,codlit,1428,1932,1538,1964
-32,1,4,37,codongane,best_effort,0.95,codongan,codongane,1423,1966,1615,2015
+32,1,4,37,codongan,checked,0.95,codongan,codongane,1423,1966,1615,2015
 32,1,4,38,codta,best_effort,0.672,,cr ita,1428,2009,1566,2042
 32,1,4,39,codpal,likely,0.994,codpal,codpal,1428,2048,1574,2084
 32,1,4,40,codotdot,likely,0.988,codotdot,codotdot,1428,2088,1588,2121
@@ -13614,7 +13614,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 32,1,6,27,colesidag,best_effort,0.978,colesidag,coleddag,2064,1573,2226,1619
 32,1,6,28,cobo,best_effort,0.85,ambo,ambo,2068,1620,2234,1653
 32,1,6,29,colnng,best_effort,0.838,coinng,coinny,2065,1656,2201,1692
-32,1,6,30,colabutas,best_effort,0.977,colabutas,colabutan,2067,1692,2251,1732
+32,1,6,30,colabutan,checked,0.977,colabutas,colabutan,2067,1692,2251,1732
 32,1,6,31,colangot,best_effort,0.944,colangots,colangot,2066,1734,2247,1775
 32,1,6,32,coludt,likely,0.919,columb,coludt,2065,1776,2192,1809
 32,1,6,33,colasiman,likely,0.996,colasiman,colasiman,2069,1814,2253,1847
@@ -13823,7 +13823,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 33,1,3,24,cono,sure,0.951,cono,cono,888,1364,982,1391
 33,1,3,25,conopio,sure,0.995,conopio,conopio,888,1403,1034,1432
 33,1,3,26,conog,sure,0.995,conog,conog,886,1442,1004,1474
-33,1,3,27,conosr,best_effort,0.968,cobosr,conosa,888,1482,1012,1508
+33,1,3,27,conosa,checked,0.968,cobosr,conosa,888,1482,1012,1508
 33,1,3,28,conquilla,sure,0.996,conquilla,conquilla,884,1515,1054,1551
 33,1,3,29,conjugacion,likely,0.99,conjugacion,conjugacion,886,1559,1094,1591
 33,1,3,30,conrado,sure,0.981,conrado,conrado,884,1597,1024,1624
@@ -13983,7 +13983,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 33,1,5,40,copet,likely,0.984,copet,copet,1516,1994,1628,2027
 33,1,5,41,copertino,likely,0.998,copertino,copertino,1516,2032,1684,2064
 33,1,5,42,copico,sure,0.984,copico,copico,1514,2071,1636,2103
-33,1,5,43,copinen,best_effort,0.989,coninen,copinan,1513,2108,1660,2142
+33,1,5,43,copinan,checked,0.989,coninen,copinan,1513,2108,1660,2142
 33,1,5,44,copon,sure,0.993,copon,copon,1516,2148,1632,2181
 33,1,5,45,copius,best_effort,0.99,cohina,copius,1510,2188,1640,2220
 33,1,5,46,copons,likely,0.984,copons,copons,1509,2225,1643,2257
@@ -14473,7 +14473,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 34,1,6,26,cucula,best_effort,0.889,cycula,cucula,2038,1438,2154,1468
 34,1,6,27,ccleda,best_effort,0.89,eucleda,ucleda,2044,1475,2172,1508
 34,1,6,28,cdija,best_effort,0.972,udija,udija,2038,1514,2146,1550
-34,1,6,29,cucopa,low,0.586,chcopa,cucoba,2038,1555,2162,1588
+34,1,6,29,cucoba,checked,0.586,chcopa,cucoba,2038,1555,2162,1588
 34,1,6,30,cucura,best_effort,0.979,cucuta,cucura,2037,1595,2159,1628
 34,1,6,31,cucuro,likely,0.943,cucuro,cucuro,2040,1637,2158,1667
 34,1,6,32,cucorratia,best_effort,0.732,eugstegooo,cucorratia,2040,1672,2214,1704
@@ -14908,7 +14908,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 35,3,6,46,dacoan,likely,0.99,dacoan,dacoan,1896,2496,2031,2530
 35,3,6,47,dacliston,best_effort,0.987,dacliston,daeliston,1896,2530,2077,2569
 35,3,6,48,dacquel,best_effort,0.92,decquel,dacquel,1898,2573,2046,2610
-35,3,6,49,daculeapo,best_effort,0.987,daculeapo,daculsapo,1896,2613,2085,2650
+35,3,6,49,daculsapo,checked,0.987,daculeapo,daculsapo,1896,2613,2085,2650
 35,3,6,50,daclangin,best_effort,0.851,daciangia,daclangin,1894,2649,2080,2728
 35,3,6,51,dacupar,best_effort,0.983,dacupar,dacuour,1896,2731,2052,2764
 35,3,6,52,dacustal,best_effort,0.988,dacustal,dacuatal,1900,2772,2060,2804
@@ -14916,7 +14916,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 35,3,6,54,dada,sure,0.98,dada,dada,1902,2844,2076,2885
 35,3,6,55,dadaanan,likely,0.976,dadaanan,dadaanan,1904,2882,2088,2923
 35,3,6,56,dadamayan,likely,0.995,dadamayan,dadamayan,1905,2923,2118,2965
-35,3,6,57,dadsaiten,best_effort,0.994,dadsaitan,dadsaiten,1905,2962,2089,3001
+35,3,6,57,dadsaitan,checked,0.994,dadsaitan,dadsaiten,1905,2962,2089,3001
 35,3,6,58,dadis,sure,0.953,dadis,dadis,1908,3004,2014,3037
 35,3,6,59,dadison,sure,0.995,dadison,dadison,1905,3041,2062,3079
 35,3,6,60,dador,sure,0.986,dador,dador,1908,3082,2022,3115
@@ -15087,8 +15087,8 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 36,1,3,16,dagohay,likely,0.993,dagohay,dagohay,986,1063,1152,1102
 36,1,3,17,daguman,sure,0.996,daguman,daguman,986,1108,1165,1143
 36,1,3,18,daguinottan,likely,0.989,daguinottan,daguinottan,985,1148,1208,1181
-36,1,3,19,dagnjoya,best_effort,0.994,dognjoya,dagajoya,983,1182,1163,1233
-36,1,3,20,dagatunpan,best_effort,0.986,dagatunpan,dagatanpan,988,1232,1204,1266
+36,1,3,19,dagajoya,checked,0.994,dognjoya,dagajoya,983,1182,1163,1233
+36,1,3,20,dagatanpan,checked,0.986,dagatunpan,dagatanpan,988,1232,1204,1266
 36,1,3,21,dagondonton,likely,0.99,dagondonton,dagondonton,988,1270,1224,1305
 36,1,3,22,dagumanpan,sure,0.994,dagumanpan,dagumanpan,987,1310,1222,1345
 36,1,3,23,dagunioso,likely,0.978,dagunioso,dagunioso,988,1353,1174,1386
@@ -15663,17 +15663,17 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 37,1,5,18,datar,best_effort,0.965,datar,dataró,1557,1152,1692,1191
 37,1,5,19,datangba,likely,0.983,datangba,datangba,1564,1196,1732,1233
 37,1,5,20,dateng,sure,0.995,dateng,dateng,1550,1224,1702,1276
-37,1,5,21,davalilla,likely,0.982,davalilla,davalilla,1558,1267,1717,1306
-37,1,5,22,davalilio,best_effort,0.993,davalillo,davalilio,1552,1304,1716,1346
-37,1,5,23,david,sure,0.993,david,david,1554,1347,1671,1381
-37,1,5,24,davila,sure,0.991,davila,davila,1556,1385,1674,1419
-37,1,5,25,davad,best_effort,0.996,devad,davad,1542,1419,1688,1465
-37,1,5,26,davirao,sure,0.985,davirao,davirao,1549,1461,1696,1501
-37,1,5,27,davatos,sure,0.954,davatos,davatos,1547,1498,1706,1545
-37,1,5,28,davi,best_effort,0.988,dávi,davi,1547,1537,1645,1576
-37,1,5,29,davin,sure,0.995,davin,davin,1554,1581,1666,1615
-37,1,5,30,davela,sure,0.994,davela,davela,1546,1618,1678,1656
-37,1,5,31,davong,likely,0.997,davong,davong,1544,1658,1691,1700
+37,1,5,21,davalilla,checked,0.982,davalilla,davalilla,1558,1267,1717,1306
+37,1,5,22,davalilio,checked,0.993,davalillo,davalilio,1552,1304,1716,1346
+37,1,5,23,david,checked,0.993,david,david,1554,1347,1671,1381
+37,1,5,24,davila,checked,0.991,davila,davila,1556,1385,1674,1419
+37,1,5,25,davad,checked,0.996,devad,davad,1542,1419,1688,1465
+37,1,5,26,davirao,checked,0.985,davirao,davirao,1549,1461,1696,1501
+37,1,5,27,davatos,checked,0.954,davatos,davatos,1547,1498,1706,1545
+37,1,5,28,davi,checked,0.988,dávi,davi,1547,1537,1645,1576
+37,1,5,29,davin,checked,0.995,davin,davin,1554,1581,1666,1615
+37,1,5,30,davela,checked,0.994,davela,davela,1546,1618,1678,1656
+37,1,5,31,davong,checked,0.997,davong,davong,1544,1658,1691,1700
 37,1,5,32,dana,best_effort,0.996,dana,dana,1540,1694,1654,1738
 37,1,5,33,danag,best_effort,0.997,danag,danag,1534,1722,1675,1786
 37,1,5,34,danalat,best_effort,0.965,danalat,danalat,1541,1767,1696,1815
@@ -15683,15 +15683,15 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 37,1,5,38,davatan,best_effort,0.988,danatan,daustan,1542,1928,1694,1967
 37,1,5,39,dauyo,best_effort,0.995,dauyo,dauyo,1535,1967,1669,2009
 37,1,5,40,davyoc,best_effort,0.979,danyoc,dauyoc,1533,2003,1686,2052
-37,1,5,41,davat,best_effort,0.988,daust,dauat,1537,2043,1657,2083
+37,1,5,41,dauat,checked,0.988,daust,dauat,1537,2043,1657,2083
 37,1,5,42,dauado,best_effort,0.971,dauado,dauado,1538,2086,1673,2120
 37,1,5,43,davi,sure,0.85,davi,davi,1536,2124,1630,2158
 37,1,5,44,dauis,best_effort,0.993,dauis,dauis,1540,2162,1640,2195
 37,1,5,45,dauit,best_effort,0.994,dauit,dauit,1531,2198,1641,2236
 37,1,5,46,dauong,best_effort,0.996,dauong,dauong,1529,2236,1679,2277
-37,1,5,47,davita,best_effort,0.992,deuite,dauita,1525,2270,1663,2317
+37,1,5,47,dauita,checked,0.992,deuite,dauita,1525,2270,1663,2317
 37,1,5,48,dauani,best_effort,0.92,dauani,dauani,1532,2314,1662,2349
-37,1,5,49,davinan,best_effort,0.984,dauinan,daninan,1528,2354,1686,2393
+37,1,5,49,dauinan,checked,0.984,dauinan,daninan,1528,2354,1686,2393
 37,1,5,50,davsitas,best_effort,0.969,dausitas,daualtas,1532,2396,1694,2429
 37,1,5,51,daup,best_effort,0.997,daup,daup,1527,2431,1639,2471
 37,1,5,52,davtel,best_effort,0.986,dautel,dantel,1529,2470,1655,2505
@@ -16365,7 +16365,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 39,1,3,16,diminuto,best_effort,0.997,diminiko,diminuto,986,1048,1144,1078
 39,1,3,17,dimialium,best_effort,0.761,denialium,dimitalius,982,1080,1162,1118
 39,1,3,18,dimaslan,likely,0.986,dimaslan,dimaalan,982,1123,1151,1156
-39,1,3,19,dimalacut,best_effort,0.997,dimalacut,dimalacat,979,1159,1155,1197
+39,1,3,19,dimalacat,checked,0.997,dimalacut,dimalacat,979,1159,1155,1197
 39,1,3,20,dimate,sure,0.988,dimate,dimate,980,1200,1109,1233
 39,1,3,21,dimuya,likely,0.991,dimuya,dimuya,978,1239,1121,1276
 39,1,3,22,dimmal,best_effort,0.943,dinual,glimal,982,1281,1086,1308
@@ -16416,7 +16416,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 39,1,3,67,dimacusu,best_effort,0.911,dimacusu,dimatusa,942,3007,1118,3042
 39,1,3,68,dinayuga,best_effort,0.85,danayuga,danayuga,942,3049,1121,3090
 39,1,3,69,dimfain,best_effort,0.99,diffain,difficain,935,3080,1078,3131
-39,1,3,70,dimrainga,best_effort,0.99,digrainga,dimainga,937,3124,1118,3168
+39,1,3,70,dimainga,checked,0.99,digrainga,dimainga,937,3124,1118,3168
 39,1,3,71,dimfiampil,best_effort,0.981,diffiampil,dipampil,938,3164,1111,3206
 39,1,3,72,dimgunejan,best_effort,0.987,dvagunejan,dinaunejan,939,3205,1144,3241
 39,1,4,1,dimtulac,best_effort,0.85,apistulac,awatulac,1308,482,1480,516
@@ -17069,7 +17069,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 41,1,1,3,dool,likely,0.974,dool,dool,248,616,340,650
 41,1,1,4,doots,best_effort,0.97,docts,doots,248,654,354,687
 41,1,1,5,doole,best_effort,0.985,daple,doole,250,694,356,727
-41,1,1,6,doonen,best_effort,0.987,doonen,doonan,248,737,386,766
+41,1,1,6,doonan,checked,0.987,doonen,doonan,248,737,386,766
 41,1,1,7,doopol,best_effort,0.969,dobpol,doupol,246,770,378,807
 41,1,1,8,doopio,best_effort,0.949,doopio,deopio,250,814,381,849
 41,1,1,9,dogling,low,0.925,doqueg,dogling,252,855,390,887
@@ -17085,7 +17085,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 41,1,1,19,dopagantan,likely,0.975,dopagantan,dopagantan,252,1246,466,1278
 41,1,1,20,dopini,low,0.216,robini,,252,1284,386,1324
 41,1,1,21,dopia,low,0.322,nopia,coit,224,1312,388,1411
-41,1,1,22,dopacsad,best_effort,0.949,dopacsad,dopacsan,252,1403,422,1433
+41,1,1,22,dopacsan,checked,0.949,dopacsad,dopacsan,252,1403,422,1433
 41,1,1,23,dops,best_effort,0.97,dons,dopa,252,1441,360,1475
 41,1,1,24,dopueol,best_effort,0.982,dopesol,dopueol,252,1480,400,1510
 41,1,1,25,dogeng,low,0.622,do beng,dogeng,252,1521,396,1555
@@ -18411,7 +18411,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 44,1,2,25,enicea,best_effort,0.98,euicen,enicea,690,1455,810,1485
 44,1,2,26,enjeda,likely,0.925,enjeda,enjeda,690,1493,822,1527
 44,1,2,27,enjuites,likely,0.854,enjuites,enja mes,692,1533,844,1567
-44,1,2,28,enjeria,best_effort,0.992,enjeria,enjerta,692,1577,824,1603
+44,1,2,28,enjerta,checked,0.992,enjeria,enjerta,692,1577,824,1603
 44,1,2,29,enferte,best_effort,0.968,enferte,enferte,694,1614,822,1644
 44,1,2,30,enjerto,likely,0.996,enjerto,enjerto,694,1654,824,1683
 44,1,2,31,enjambre,sure,0.994,enjambre,enjambre,692,1692,862,1722
@@ -19350,7 +19350,7 @@ book_page,block,column,row,entry,status,confidence,google_reading,issuu_reading,
 46,3,2,42,facalinag,likely,0.994,facalinag,facalinag,730,2237,902,2277
 46,3,2,43,faco,sure,0.971,faco,faco,736,2283,822,2312
 46,3,2,44,facistol,sure,0.996,facistol,facistol,736,2320,868,2353
-46,3,2,45,fache,best_effort,0.994,facha,fache,734,2360,842,2394
+46,3,2,45,facha,checked,0.994,facha,fache,734,2360,842,2394
 46,3,2,46,facon,best_effort,0.98,fgcon,facon,736,2402,846,2436
 46,3,2,47,faconia,likely,0.963,faconia,faconia,736,2438,882,2473
 46,3,2,48,facolanang,best_effort,0.978,facolenant,facolanang,734,2480,938,2514
