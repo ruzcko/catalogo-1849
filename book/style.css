@@ -202,6 +202,17 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .story .ledger small { color: var(--muted); font-size: 12px; float: right; }
 .story .letters { font-family: "IM Fell English SC", Georgia, serif; font-size: 44px; letter-spacing: .12em; margin: 0 0 10px; color: var(--accent); }
 .story .open { font-size: 17px; padding: 9px 20px; margin-top: 6px; }
+/* Beside the book, the history reads as a column of steps, one at a time: the step being read is lit, the others
+   wait faintly, and the book beside it turns to match. */
+@media (min-width: 760px) {
+  .story { width: min(500px, 40vw); padding: 0 34px 0; }
+  .story .slide { min-height: 64vh; display: flex; flex-direction: column; justify-content: center; border-bottom: 0;
+    opacity: .3; transition: opacity .45s ease; }
+  .story .slide.on { opacity: 1; }
+  .story .slide:last-child { min-height: 74vh; }
+  .story h2 { font-size: 34px; }
+  .story .line { font-size: 19px; }
+}
 @media (max-width: 759px) {
   .story { width: auto; right: 10px; border-radius: 0 16px 16px 0; padding: 0 20px 24px; }
   .storytab { padding: 12px 6px; font-size: 14px; }

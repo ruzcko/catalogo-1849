@@ -20,7 +20,7 @@
 <link rel="preload" href="/fonts/IMFeENsc28P.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" crossorigin>
 <script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
-<link rel="stylesheet" href="/style.css?v=32">
+<link rel="stylesheet" href="/style.css?v=33">
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" } }</script>
 </head>
 <body>
@@ -49,7 +49,7 @@
 <button type="button" id="storytab" class="storytab" aria-controls="story" aria-expanded="false">History</button>
 <aside id="story" class="story out" aria-label="The history behind this book">
   <div class="sh"><h2>The history</h2><button type="button" class="x" aria-label="Close the history">✕</button></div>
-  <article class="slide"><div class="in">
+  <article class="slide" data-step="closed"><div class="in">
     <p class="kicker">Before 1849</p>
     <div class="ledger" role="img" aria-label="A tax list with the same name on every line (an illustration)">
       <div>Juan de los Santos <small>an illustration</small></div><div>Juan de los Santos</div><div>Juan de los Santos</div><div>Juan de los Santos</div></div>
@@ -57,27 +57,27 @@
     <p class="line">Many Filipinos had a baptismal name but no family name passed down, and the same few saints' names came up over and over: the tax lists and parish books couldn't tell people apart.</p>
     <p class="src">Source: <a href="https://books.google.com/books?id=dEMvAAAAMAAJ" target="_blank" rel="noopener">Clavería's decree, preamble, 1973 reprint, p. x</a></p>
   </div></article>
-  <article class="slide"><div class="in">
+  <article class="slide" data-step="title"><div class="in">
     <p class="kicker">The fix</p>
     <p class="hero">60,000</p>
     <h2>One book of surnames, sent to every province.</h2>
     <p class="line">Spanish names, native words, plants, places. On 21 November 1849 Governor-General Narciso Clavería ordered families without a fixed surname to take one from it.</p>
     <p class="src">Source: <a href="https://books.google.com/books?id=dEMvAAAAMAAJ" target="_blank" rel="noopener">Clavería's decree, Arts. 1–3, 1973 reprint, pp. x–xi</a></p>
   </div></article>
-  <article class="slide"><div class="in">
+  <article class="slide" data-step="letters"><div class="in">
     <p class="kicker">Letter by letter</p>
     <p class="letters" aria-hidden="true">A · B · C · D</p>
     <h2>In Albay, the alphabet went town by town.</h2>
     <p class="line">Each town was given a letter of the book. By 1895 a historian noted towns where almost every surname began with A, others with B.</p>
     <p class="src">Sources: <a href="https://books.google.com/books?id=dEMvAAAAMAAJ" target="_blank" rel="noopener">Abella, introduction, 1973 reprint, p. vii</a>; Montero y Vidal, quoted by Abella, p. xiv</p>
   </div></article>
-  <article class="slide"><div class="in">
+  <article class="slide" data-step="page"><div class="in">
     <p class="kicker">Did it work?</p>
     <h2>Not really. But the names stayed.</h2>
     <p class="line">It was enforced hard in some provinces and almost ignored in others, and its main aim, a complete tax list, “failed to a great extent,” says Domingo Abella, who edited the 1973 reprint.</p>
     <p class="src">Source: <a href="https://books.google.com/books?id=dEMvAAAAMAAJ" target="_blank" rel="noopener">Abella, introduction, 1973 reprint, pp. xiii–xv</a></p>
   </div></article>
-  <article class="slide"><div class="in">
+  <article class="slide" data-step="here"><div class="in">
     <p class="kicker">This book</p>
     <h2>Here it is, every page.</h2>
     <p class="line">The Catálogo alfabético de apellidos, transcribed from two scans of the National Archives' 1973 reprint, with the scanned pages a tap away. Leaf through it, find a name, and help read the blurry ones.</p>
@@ -130,6 +130,6 @@
   <form method="dialog"><button>Close</button> <button type="button" id="restory">The history</button></form>
 </dialog>
 
-<script type="module" src="/book.js?v=32"></script>
+<script type="module" src="/book.js?v=33"></script>
 </body>
 </html>
