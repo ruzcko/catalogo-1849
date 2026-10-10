@@ -1004,13 +1004,15 @@ function updateBar() {
 // The history is optional: a panel at the side (index.html), opened from the tab on the left edge or from the ? panel.
 // On a wide screen it opens beside the closed book on a first visit, and the book moves over to make room; on a narrow
 // one it lies over the book, so it waits for the tab. A link to a page, a name or an entry goes straight there.
-const story = document.getElementById("story"), storyTab = document.getElementById("storytab");
+const story = document.getElementById("story"), storyTab = document.getElementById("storytab"), storyX = document.getElementById("storyx");
 let storyOpen = false;
 const beside = () => innerWidth >= 760;                       // the panel sits beside the book, not over it
 const storyCovers = () => storyOpen && !beside();             // the panel is over the book: the book waits
 function placeStory() {   // between the bars; on a wide screen the book's view makes room for it
-  story.style.top = `${TOP() + 8}px`;
-  story.style.bottom = `${BOT() + 8}px`;
+  story.style.top = `${TOP()}px`;
+  story.style.bottom = `${BOT()}px`;
+  storyX.style.top = `${TOP() + 10}px`;
+  storyX.hidden = !storyOpen;
   view.ts = storyOpen && beside() ? story.offsetWidth : 0;
 }
 function showStory(fromTop = false) {
@@ -1062,7 +1064,7 @@ const stepper = new IntersectionObserver(entries => {
 }, { root: story, rootMargin: "-42% 0px -48% 0px" });   // the step across the middle of the panel
 for (const s of story.querySelectorAll(".slide")) stepper.observe(s);
 storyTab.onclick = () => showStory();
-story.querySelector(".x").onclick = () => closeStory(false);
+storyX.onclick = () => closeStory(false);
 story.querySelector(".open").onclick = () => closeStory(true);
 function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
   if (document.hidden) {
