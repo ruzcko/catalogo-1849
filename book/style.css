@@ -226,3 +226,7 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .sw.s2 { background: rgba(70, 115, 175, .45); }
 .sw.s3 { background: rgba(214, 165, 45, .55); outline: 1px dashed rgba(120, 80, 30, .8); }
 .sw.s4 { background: rgba(232, 120, 40, .6); }
+
+/* A green name's question: does the scan agree with the OCR? */
+.entry .agree { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 10px; }
+.entry .agree .no { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); }

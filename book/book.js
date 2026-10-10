@@ -1088,7 +1088,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     return { k, css: `background-image:url('${CROPS}${CROPS_V}/${scan}.webp');background-size:${CELL_W * ACROSS * k}px auto;` +
       `background-position:-${cx * k}px -${cy * k}px;${size}` };
   };
-  const id = `${scan}.${col}.${row}`, blank = unread(name);
+  const id = `${scan}.${col}.${row}`, blank = unread(name), confident = status <= 2 && !blank;   // a green name: agree or not
   highlight = { n: page.n, name, col, row };   // outlined on its page, until the next one
   forget(faceOfPage(page.n));
   show();
@@ -1103,7 +1103,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     <p class="small order" hidden></p>
     ${raw && !blank ? `<p class="small">OCR reading: <b>${esc(name)}</b> · the other scan's OCR: <b>${esc(raw)}</b></p>` : ""}
     <form class="readings" autocomplete="off">
-      <p class="q">How do you read it?</p>
+      <p class="q">${confident ? `Does the scan say <b>${esc(name)}</b>?` : "How do you read it?"}</p>
       <div class="opts"><p class="small">Loading…</p></div>
       <label class="own">${blank ? "Your reading:" : "Something else:"} <input name="own" maxlength="20" spellcheck="false" autocapitalize="off" placeholder="type your reading"></label>
       <p class="err" role="alert"></p>
@@ -1136,7 +1136,7 @@ async function openEntry({ page, scan, e, orig = e }) {
   if (res?.error === "stale") return pageChanged();
   if (!res?.ok) { dlg.querySelector(".opts").innerHTML = `<p class="small">Couldn't load the readings. Try again later.</p>`; return; }
   const mine = voted(id);
-  if (mine) return showTally(res.options, mine);
+  if (mine) return showTally(res.options, mine, false, confident && name);
   // The book is in order on the first three letters, so its neighbours narrow down how it can start.
   if (res.prev || res.next) {
     const o = dlg.querySelector(".order");
@@ -1147,9 +1147,24 @@ async function openEntry({ page, scan, e, orig = e }) {
   dlg.querySelector(".opts").innerHTML = res.options.length ? res.options.map(o =>
     `<label><input type="radio" name="pick" value="${esc(o.r)}"> ${esc(o.r)}${o.ours ? ` <small>OCR reading</small>` : ""}</label>`).join("")
     : `<p class="small">No readings yet: type yours below.</p>`;
+  // A name the OCR was sure of: one question, does the scan agree? "No" opens the box for what it does say.
+  let agreed = false;
+  if (confident) {
+    const opts = dlg.querySelector(".opts"), own = form.own.closest(".own"), vote = form.querySelector('button[type="submit"]');
+    opts.innerHTML = `<div class="agree"><button type="button" class="primary yes">Yes, it matches</button>
+      <button type="button" class="no">No, it says something else</button></div>`;
+    own.hidden = vote.hidden = true;
+    opts.querySelector(".yes").onclick = () => { agreed = true; form.requestSubmit(); };
+    opts.querySelector(".no").onclick = () => {
+      opts.hidden = true;
+      own.hidden = vote.hidden = false;
+      dlg.querySelector(".q").textContent = "What does the scan say?";
+      form.own.focus();
+    };
+  }
   form.own.addEventListener("input", () => { form.querySelectorAll("input[name=pick]").forEach(r => { r.checked = false; }); });
   form.querySelectorAll("input[name=pick]").forEach(r => r.addEventListener("change", () => { form.own.value = ""; }));
-  dlg.querySelector(".notsure").onclick = () => showTally(res.options, null);
+  dlg.querySelector(".notsure").onclick = () => showTally(res.options, null, false, confident && name);
   let token = "";
   loadTurnstile().then(() => {
     if (!dlg.open) return;
@@ -1158,8 +1173,9 @@ async function openEntry({ page, scan, e, orig = e }) {
   form.onsubmit = async ev => {
     ev.preventDefault();
     const pick = form.querySelector("input[name=pick]:checked")?.value, own = form.own.value.trim();
-    const reading = own || pick;
-    if (!reading) { err.textContent = "Pick a reading or type your own."; return; }
+    const reading = agreed ? name : own || pick;
+    agreed = false;
+    if (!reading) { err.textContent = confident ? "Type what the scan says." : "Pick a reading or type your own."; return; }
     if (!token) { err.textContent = "One moment: we're checking you're a person."; return; }
     err.textContent = "";
     const r = await fetch("/api/vote", { method: "POST", headers: { "content-type": "application/json" },
@@ -1167,7 +1183,7 @@ async function openEntry({ page, scan, e, orig = e }) {
     if (r?.error === "stale") return pageChanged();
     if (r?.ok || r?.error === "already") {
       try { localStorage.setItem(`voted:${id}`, reading); } catch {}
-      showTally(r.options, reading, r.pending);
+      showTally(r.options, reading, r.pending, confident && name);
     } else {
       err.textContent = r?.message || (r?.error === "verify" ? "The spam check failed. Please try again." : "Couldn't save your vote. Try again later.");
       token = "";
@@ -1177,11 +1193,12 @@ async function openEntry({ page, scan, e, orig = e }) {
 }
 
 // The tally: shown after you vote, or when you choose "Not sure" (so votes aren't swayed by the count).
-function showTally(options, mine, pending) {
+function showTally(options, mine, pending, ocr) {   // ocr: a green name's OCR reading, to say how many agree with it
   const total = options.reduce((a, o) => a + o.v, 0), top = Math.max(...options.map(x => x.v), 1);
   const list = [...options].sort((a, b) => b.v - a.v);
-  const box = dlg.querySelector(".tally");
+  const box = dlg.querySelector(".tally"), yes = ocr ? (options.find(o => o.r === ocr)?.v || 0) : 0;
   box.innerHTML = `<p class="q">${mine ? "Thanks! Here's how readers read it:" : "How readers read it so far:"}</p>` +
+    (ocr && total ? `<p class="small">${yes} of ${total} reader${total === 1 ? "" : "s"} say the scan matches the OCR reading.</p>` : "") +
     (total ? list.map(o => `<div class="bar${o.r === mine ? " me" : ""}"><i style="width:${Math.round(100 * o.v / top)}%"></i>
       <span>${esc(o.r)}${o.ours ? " <small>OCR reading</small>" : ""}</span><b>${o.v}</b></div>`).join("") : `<p class="small">No votes yet. Be the first!</p>`) +
     (pending ? `<p class="small">Your own reading shows here once someone else reads it the same way.</p>` : "") +
