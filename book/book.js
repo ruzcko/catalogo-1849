@@ -689,6 +689,7 @@ function place() {
   // Closed, the book is seen at an angle, lying on the desk; open, from straight above, to read.
   const tt = closedBook() ? 1 : 0;
   if (tt !== view.tt) { view.tt = tt; ease(); }
+  document.body.classList.toggle("shut", closedBook());
 }
 const closedBook = () => (mode === "single" ? si === 0 || si === SINGLE.length - 1 : cur === 0 || cur === LEAVES);
 
@@ -800,7 +801,9 @@ function turn(dir) {
 }
 
 // ---------- Camera: fit, zoom and pan ----------
-const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0 };   // x, y, zoom, tilt: now; tx, ty, tz, tt: where the camera eases to
+const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0, side: 0, ts: 0 };   // x, y, zoom, tilt, side: now; tx, ty, tz, tt, ts: where the camera eases to
+// side: the width (px) of the history panel beside the book, which the book's view leaves free on the left.
+const freeW = () => (innerWidth - view.side) / innerWidth;
 const narrow = () => mode === "single";
 const TOP = () => document.querySelector(".bar.top").offsetHeight, BOT = () => document.querySelector(".bar.bottom").offsetHeight;
 
@@ -825,7 +828,7 @@ function fitDistance() {
   const vw = (x1 - x0) * (mode === "single" ? 1.04 : 1.06), vh = H * 1.04;
   const usable = (innerHeight - TOP() - BOT()) / innerHeight;
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect));
+  return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect * freeW()));
 }
 
 function applyCamera() {
@@ -835,7 +838,8 @@ function applyCamera() {
   // Keep the bars from covering the page: shift the view by half the difference between the two bars.
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt);
-  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x, y = view.y - shift;
+  // And move it over by half the panel's width, so the book sits in the middle of the space the panel leaves.
+  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x - (view.side / innerWidth) * d * tan * camera.aspect, y = view.y - shift;
   camera.position.set(x + d * Math.sin(pitch) * Math.sin(yaw), y - d * Math.sin(pitch) * Math.cos(yaw), d * Math.cos(pitch));
   camera.up.set(-Math.sin(yaw), Math.cos(yaw), 0);
   camera.lookAt(x, y, 0);
@@ -852,9 +856,10 @@ function ease() {
     view.y += (view.ty - view.y) * k;
     view.zoom += (view.tz - view.zoom) * k;
     view.tilt += (view.tt - view.tilt) * (reduceMotion ? 1 : 0.07);   // the swing from desk to page is slower
+    view.side += (view.ts - view.side) * (reduceMotion ? 1 : 0.14);
     render();
-    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) > 1e-4) requestAnimationFrame(step);
-    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; easing = false; render(); }
+    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) + Math.abs(view.ts - view.side) / 1000 > 1e-4) requestAnimationFrame(step);
+    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; view.side = view.ts; easing = false; render(); }
   };
   step();
 }
@@ -863,7 +868,7 @@ function clampView() {
   // Keep the view on the pages in view.
   const [x0, x1] = span();
   const d = fitDistance() / view.zoom, tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const halfW = d * tan * camera.aspect, halfH = d * tan * (innerHeight - TOP() - BOT()) / innerHeight;
+  const halfW = d * tan * camera.aspect * freeW(), halfH = d * tan * (innerHeight - TOP() - BOT()) / innerHeight;
   const fit = (v, a, b, half) => (b - a <= 2 * half ? (a + b) / 2 : Math.max(a + half, Math.min(b - half, v)));
   view.tx = fit(view.tx, x0, x1, halfW);
   view.ty = fit(view.ty, -H / 2, H / 2, halfH);
@@ -950,34 +955,47 @@ function updateBar() {
   if (!dlg.open) setPath(n ? `/${n}` : "/");
 }
 
-// ---------- The story before the book, then the book opening ----------
-// First visit: a few screens of history (index.html), then the closed book on the desk opens. Later visits: the
-// book opens straight away. A link to a page, a name or an entry skips both.
-const story = document.getElementById("story");
+// ---------- The history, at the side, and the book opening ----------
+// The history is optional: a panel at the side (index.html), opened from the tab on the left edge or from the ? panel.
+// On a wide screen it opens beside the closed book on a first visit, and the book moves over to make room; on a narrow
+// one it lies over the book, so it waits for the tab. A link to a page, a name or an entry goes straight there.
+const story = document.getElementById("story"), storyTab = document.getElementById("storytab");
 let storyOpen = false;
-function showStory() {
+const beside = () => innerWidth >= 760;                       // the panel sits beside the book, not over it
+const storyCovers = () => storyOpen && !beside();             // the panel is over the book: the book waits
+function placeStory() {   // between the bars; on a wide screen the book's view makes room for it
+  story.style.top = `${TOP() + 8}px`;
+  story.style.bottom = `${BOT() + 8}px`;
+  view.ts = storyOpen && beside() ? story.offsetWidth : 0;
+}
+function showStory(fromTop = false) {
   storyOpen = true;
-  story.hidden = false;
-  story.classList.remove("closing");
-  story.scrollTop = 0;
+  story.classList.remove("out");
+  storyTab.setAttribute("aria-expanded", "true");
+  if (fromTop) story.scrollTop = 0;
+  placeStory();
+  ease();
 }
 function closeStory(open) {
   if (!storyOpen) return;
   storyOpen = false;
   try { localStorage.setItem("story", "seen"); } catch {}
-  story.classList.add("closing");
-  setTimeout(() => { story.hidden = true; story.classList.remove("closing"); }, reduceMotion ? 0 : 600);
-  if (open) openBook(reduceMotion ? 0 : 650); else inviteOpen(800);
+  story.classList.add("out");
+  storyTab.setAttribute("aria-expanded", "false");
+  placeStory();
+  ease();
+  if (open) openBook(reduceMotion ? 0 : 450); else inviteOpen(600);
 }
+storyTab.onclick = () => showStory();
+story.querySelector(".x").onclick = () => closeStory(false);
+story.querySelector(".open").onclick = () => closeStory(true);
 function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
   if (document.hidden) {
     addEventListener("visibilitychange", () => openBook(delay), { once: true });
     return;
   }
-  setTimeout(() => { if (!T && !storyOpen && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
+  setTimeout(() => { if (!T && !storyCovers() && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
 }
-story.querySelector(".skipbook").onclick = () => closeStory(false);
-story.querySelector(".open").onclick = () => closeStory(true);
 
 // The closed book waits for the reader: on a computer the cover lifts a little under the pointer, and a click opens
 // it from there; a touch screen gets one small lift, as an invitation, and a tap opens it.
@@ -985,7 +1003,7 @@ const PEEK = 0.09;                                // how far the cover lifts, as
 let peeking = false, invited = false;
 const frontClosed = () => (mode === "single" ? si === 0 : cur === 0);
 function peekCover(on) {
-  if (reduceMotion || storyOpen || view.zoom > 1.05) return;
+  if (reduceMotion || storyCovers() || view.zoom > 1.05) return;
   if (on && !peeking && !T && frontClosed() && startTurn(1, true)) {
     peeking = true;
     T.hold = true;
@@ -1016,7 +1034,7 @@ canvas.addEventListener("pointerleave", () => { canvas.style.cursor = ""; peekCo
 function inviteOpen(delay) {
   if (document.hidden) { addEventListener("visibilitychange", () => inviteOpen(delay), { once: true }); return; }
   setTimeout(() => {
-    if (invited || storyOpen || !frontClosed()) return;
+    if (invited || storyCovers() || !frontClosed()) return;
     invited = true;
     const touch = matchMedia("(hover: none)").matches;
     toast(touch ? "Tap the book to open it" : "Click the book to open it");
@@ -1025,8 +1043,7 @@ function inviteOpen(delay) {
 }
 document.getElementById("restory").onclick = () => {
   document.getElementById("about").close();
-  goToFace(0, false);   // back to the closed book, so it opens again after the story
-  showStory();
+  showStory(true);
 };
 
 // Clean addresses: /58 is a page, /fabella a name, /58/glubig an entry to help read (/58/glubig-2 for a second
@@ -1514,7 +1531,8 @@ themeBtn.onclick = () => {
 darkQuery.addEventListener?.("change", themeButton);
 themeButton();
 addEventListener("keydown", e => {
-  if (storyOpen || e.target.closest?.("input, textarea, select, dialog")) return;
+  if (e.key === "Escape" && storyOpen && !document.querySelector("dialog[open]")) { closeStory(false); return; }
+  if (storyCovers() || e.target.closest?.("input, textarea, select, dialog, #story")) return;
   if (e.key === "ArrowRight") next();
   else if (e.key === "ArrowLeft") prev();
   else if (e.key === "+" || e.key === "=") zoomTo(view.zoom * 1.4, view.x, view.y);
@@ -1535,6 +1553,8 @@ function render() {
   });
 }
 function resize() {
+  placeStory();
+  view.side = view.ts;
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -1652,6 +1672,7 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
     render();
     let seen = false;
     try { seen = localStorage.getItem("story") === "seen"; } catch {}
-    if (seen) inviteOpen(900); else showStory();
+    if (!seen && beside()) showStory();   // the history beside the closed book, the first time on a wide screen
+    inviteOpen(900);
   }
 })();

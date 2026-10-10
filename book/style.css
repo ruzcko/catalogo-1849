@@ -173,28 +173,41 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .entry .small { color: var(--muted); font-size: 13px; }
 .entry .askfriend { color: var(--accent); text-decoration: underline; padding: 0; font-size: 14px; }
 
-/* The story before the book: a few screens you scroll through, then the book opens. */
-.story { position: fixed; inset: 0; z-index: 4; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain;
-  background: radial-gradient(circle, var(--dot) 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg); transition: opacity .6s ease; }
-.story.closing { opacity: 0; pointer-events: none; }
-.story .skipbook { position: fixed; top: max(12px, env(safe-area-inset-top)); right: 16px; z-index: 5; padding: 6px 14px;
-  border-radius: 999px; border: 1px solid var(--line); background: var(--bar); color: var(--muted); font-size: 14px; }
-.story .slide { min-height: 100vh; min-height: 100dvh; scroll-snap-align: start; display: grid; place-items: center; padding: 72px 20px; }
-.story .in { max-width: 34rem; width: 100%; }
-.story .kicker { font-family: "IM Fell English SC", Georgia, serif; color: var(--accent); letter-spacing: .04em; margin: 0 0 10px; font-size: 18px; }
-.story h2 { font-weight: 400; font-size: clamp(30px, 7vw, 46px); line-height: 1.1; margin: 0 0 14px; }
-.story .line { font-size: clamp(18px, 4.4vw, 21px); margin: 0 0 18px; }
-.story .hero { font-size: clamp(64px, 20vw, 120px); line-height: 1; margin: 0 0 8px; }
-.story .src { color: var(--muted); font-size: 14px; margin: 18px 0 0; }
+/* The history, optional, in a panel at the side: beside the book on wide screens, over it on narrow ones. A tab on
+   the left edge opens it. Its top and bottom follow the bars (set from book.js). */
+.storytab { position: fixed; left: 0; top: 50%; z-index: 2; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl;
+  padding: 16px 8px; border-radius: 10px 0 0 10px; border: 1px solid var(--line); border-right: 0; background: var(--panel);
+  font-family: "IM Fell English SC", Georgia, serif; font-size: 16px; letter-spacing: .06em; color: var(--muted); }
+.storytab:hover { color: var(--accent); }
+.storytab[aria-expanded="true"] { display: none; }
+.story { position: fixed; left: 0; top: 60px; bottom: 60px; z-index: 2; width: min(400px, 34vw); overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 26px 28px; background: var(--panel); border: 1px solid var(--line); border-left: 0; border-radius: 0 16px 16px 0;
+  transition: transform .45s ease, visibility 0s; }
+.story.out { transform: translateX(-102%); visibility: hidden; transition: transform .45s ease, visibility 0s .45s; }
+.story .sh { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 16px 0 6px; background: var(--panel); }
+.story .sh h2 { font-family: "IM Fell English SC", Georgia, serif; font-weight: 400; font-size: 18px; letter-spacing: .04em; color: var(--accent); margin: 0; }
+.story .x { margin-left: auto; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; color: var(--muted); }
+.story .x:hover { background: var(--tint); }
+.story .slide { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.story .slide:last-child { border-bottom: 0; }
+.story .kicker { font-family: "IM Fell English SC", Georgia, serif; color: var(--accent); letter-spacing: .04em; margin: 0 0 8px; font-size: 16px; }
+.story h2 { font-weight: 400; font-size: 28px; line-height: 1.12; margin: 0 0 10px; }
+.story .line { font-size: 18px; margin: 0 0 12px; }
+.story .hero { font-size: 64px; line-height: 1; margin: 0 0 6px; }
+.story .src { color: var(--muted); font-size: 14px; margin: 12px 0 0; }
 .story .src a { color: var(--muted); }
-.story .ledger { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px 14px; margin: 0 0 18px; font-size: 18px; }
+.story .ledger { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 8px 12px; margin: 0 0 14px; font-size: 17px; }
 .story .ledger div { border-bottom: 1px solid var(--line); padding: 3px 0; }
 .story .ledger div:last-child { border-bottom: 0; }
 .story .ledger small { color: var(--muted); font-size: 12px; float: right; }
-.story .letters { font-family: "IM Fell English SC", Georgia, serif; font-size: clamp(38px, 11vw, 64px); letter-spacing: .12em; margin: 0 0 14px; color: var(--accent); }
-.story .scrollhint { color: var(--muted); font-size: 14px; margin-top: 28px; }
-.story .open { font-size: 18px; padding: 10px 22px; margin-top: 8px; }
-@media (prefers-reduced-motion: reduce) { .story { transition: none; } }
+.story .letters { font-family: "IM Fell English SC", Georgia, serif; font-size: 44px; letter-spacing: .12em; margin: 0 0 10px; color: var(--accent); }
+.story .open { font-size: 17px; padding: 9px 20px; margin-top: 6px; }
+@media (max-width: 759px) {
+  .story { width: auto; right: 10px; border-radius: 0 16px 16px 0; padding: 0 20px 24px; }
+  .storytab { padding: 12px 6px; font-size: 14px; }
+  body:not(.shut) .storytab { display: none; }   /* on a phone, the tab waits by the closed book; the ? has it too */
+}
+@media (prefers-reduced-motion: reduce) { .story, .story.out { transition: none; } }
 
 #searchbtn { display: none; }
 #theme svg, #searchbtn svg { display: block; }
