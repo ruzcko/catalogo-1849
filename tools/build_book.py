@@ -74,9 +74,14 @@ def main():
                 e.append(None)
         names = [e[4] for e in out if e[5] < 4]
         letters = sorted({e[4][0] for e in out if e[5] < 3}, key=lambda c: -sum(e[4][0] == c for e in out))
+        # The sections on this page, in reading order (for the book's A-Z): a letter with 15 or more trusted names
+        # here, "Ll" counted apart from "L" (its own letter then, after L).
+        key = lambda s: "Ll" if s.startswith("ll") else s[0].upper()
+        trusted = [key(e[4]) for e in out if e[5] < 3 and e[4][:1].isalpha()]
+        keys = [k for k in dict.fromkeys(trusted) if trusted.count(k) >= 15]
         (OUT / "p" / f"{n}.json").write_text(json.dumps({"n": n, "scan": n, "e": out}, ensure_ascii=False,
                                                         separators=(",", ":")), encoding="utf-8")
-        pages.append({"n": n, "scan": n, "letter": letters[0].upper() if letters else "",
+        pages.append({"n": n, "scan": n, "letter": letters[0].upper() if letters else "", "keys": keys,
                       "first": names[0] if names else "", "last": names[-1] if names else "", "hand": hand})
     (OUT / "pages.json").write_text(json.dumps(pages, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     # Search index: entry -> page numbers (skipping low readings), split by first letter to keep each file small.

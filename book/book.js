@@ -32,6 +32,9 @@ const SCAN_CREDIT = "Digitized by Google from the University of Michigan's copy 
 const GW = 2400, GH = 3882;                       // Google's page, in the dataset's pixels
 const SITEKEY = "0x4AAAAAAFPGu217YHhvnzcG";       // Turnstile, so votes come from people
 const STATUS = ["Read by a person", "Sure", "Likely", "Best guess", "Blurry"];
+// How sure the OCR is, as a light wash under every name (Tags and Scan views), so any line can be checked on the scan:
+// green read by a person or sure, blue likely, amber its best guess (also dotted), orange blurry.
+const SHADE = ["rgba(70, 140, 95, .16)", "rgba(70, 140, 95, .16)", "rgba(70, 115, 175, .15)", "rgba(214, 165, 45, .28)", "rgba(232, 120, 40, .32)"];
 // A line neither scan could read is "?" in the data, "unread" in its address (/2/unread, /2/unread-3).
 const unread = name => !/\p{L}/u.test(name), slug = name => (unread(name) ? "unread" : name);
 const WHY = [
@@ -269,8 +272,8 @@ function drawPrinted(g, side, page, data) {
   g.font = `${size}px ${FONT}`;
   for (const e of entries) {
     const [x0, y0, x1, y1, name, status] = e;
-    if (sure && status === 4) {   // blurry: highlighted so it stands out
-      g.fillStyle = "rgba(232, 150, 60, .32)";
+    if (sure) {   // Tags: every name washed by how sure the OCR is
+      g.fillStyle = SHADE[status];
       g.fillRect(x0 * S - 4, y0 * S - 2, Math.max(x1 - x0, 50) * S + 8, (y1 - y0) * S + 6);
     }
     if (marked(page, e)) {
@@ -297,19 +300,26 @@ function drawPrinted(g, side, page, data) {
   centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
 }
 
-// Views: "tidy" sets the names in even columns and lines (the default); "inplace" sets each name where it sits on the
-// scanned page, crooked as the scan is; "scan" shows the scanned page itself. Either typeset view leaves a gap where
-// the OCR missed a line. The view is remembered per browser (?view= picks one).
-const VIEWS = { tidy: ["Tidy", "Tidy: the names set in straight columns"],
-  inplace: ["In place", "In place: the names set where they sit on the page"],
-  scan: ["Scan", "Scan: the scanned page itself, digitized by Google from the University of Michigan's copy"] };
-let pageView = "tidy";
+// Views, picked in the View panel: "tags" (the default) sets the names in even columns, each shaded by how sure the
+// OCR is; "plain" the same without shading; "inplace" sets each name where it sits on the scanned page, crooked as
+// the scan is; "scan" shows the scanned page itself, every line the OCR read lightly shaded. A typeset view leaves a
+// gap where the OCR missed a line. Remembered per browser (?view= picks one for a visit).
+const VIEWS = {
+  tags: ["Tags", "The OCR's reading in straight columns, every name shaded by how sure the OCR is of it. Even a sure name can be misread: tap any name to see its line on the scan, and tell us if it's wrong."],
+  plain: ["Plain", "The OCR's reading in straight columns, without shading, for reading the book. Tap any name to see its line on the scan."],
+  inplace: ["As seen", "The OCR's reading, each name set where it sits on the scanned page, crooked as the scan is."],
+  scan: ["Scan", "The scanned page itself, digitized by Google from the University of Michigan's copy of the 1973 reprint. Every line the OCR read is lightly shaded: tap one to compare it with the OCR's reading."] };
+let pageView = "tags";
 try {
-  const old = localStorage.getItem("layout");   // before there were three views: "scan" meant in place
-  pageView = new URLSearchParams(location.search).get("view") || localStorage.getItem("view") || (old === "scan" ? "inplace" : "tidy");
+  // Earlier versions: view "tidy" (with or without How sure?), "inplace", "scan"; before that, layout "scan" meant in place.
+  const stored = localStorage.getItem("view"), sureBefore = localStorage.getItem("sure") === "1";
+  const before = stored === "tidy" ? (sureBefore ? "tags" : "plain") : stored || (localStorage.getItem("layout") === "scan" ? "inplace" : null);
+  pageView = new URLSearchParams(location.search).get("view") || before || "tags";
 } catch {}
-if (!VIEWS[pageView]) pageView = "tidy";
-let tidy = pageView === "tidy";
+if (pageView === "tidy") pageView = "plain";
+if (!VIEWS[pageView]) pageView = "tags";
+let tidy = pageView === "tags" || pageView === "plain";
+let sure = pageView === "tags" || pageView === "scan";   // shading by certainty
 function layoutOf(data) {
   if (!tidy) return data.e;
   if (data.tidy) return data.tidy;
@@ -347,22 +357,40 @@ function layoutOf(data) {
 }
 
 function viewButton() {
-  const b = document.getElementById("layout"), keys = Object.keys(VIEWS), nextView = keys[(keys.indexOf(pageView) + 1) % keys.length];
-  b.textContent = VIEWS[pageView][0];
-  b.title = `${VIEWS[pageView][1]}. Tap for ${VIEWS[nextView][0]}.`;
-  b.setAttribute("aria-label", `View: ${VIEWS[pageView][0]}. Switch to ${VIEWS[nextView][0]}`);
+  const b = document.getElementById("layout");
+  b.textContent = `${VIEWS[pageView][0]} ▾`;
+  b.setAttribute("aria-label", `View: ${VIEWS[pageView][0]}. Change the view`);
   canvas.setAttribute("aria-label", `The book${pageView === "scan" ? ", showing the scanned pages" : ""}. Drag or use the arrow keys to turn pages; ` +
     "double-tap to zoom. The names on the open pages are listed by the first button.");
 }
 function setView(v) {
   pageView = v;
-  tidy = v === "tidy";
+  tidy = v === "tags" || v === "plain";
+  sure = v === "tags" || v === "scan";
   try { localStorage.setItem("view", v); } catch {}
   viewButton();
   forget();
   show();
-  toast(VIEWS[v][1]);
 }
+// The View panel: the four views, each with an (i) that says what it is.
+const viewsDlg = document.getElementById("views");
+function openViews() {
+  const box = viewsDlg.querySelector(".vopts");
+  box.innerHTML = Object.entries(VIEWS).map(([k, [label, info]]) => `<div class="vopt"><div class="vrow">
+    <label><input type="radio" name="view" value="${k}"${k === pageView ? " checked" : ""}> ${label}</label>
+    <button type="button" class="i" aria-expanded="false" aria-controls="vi-${k}" aria-label="What is ${label}?">i</button></div>
+    <p class="vinfo" id="vi-${k}" hidden>${info}</p></div>`).join("");
+  box.onchange = e => { if (e.target.name === "view") { setView(e.target.value); viewsDlg.close(); } };
+  box.onclick = e => {
+    const b = e.target.closest(".i");
+    if (!b) return;
+    const p = document.getElementById(b.getAttribute("aria-controls"));
+    p.hidden = !p.hidden;
+    b.setAttribute("aria-expanded", String(!p.hidden));
+  };
+  viewsDlg.showModal();
+}
+viewsDlg.querySelector(".x").onclick = () => viewsDlg.close();
 
 const pageData = new Map();
 let noStore = false;   // set once the server says a page changed: fetch past any cached copy from then on
@@ -481,13 +509,16 @@ function drawScan(g, page, data, img, meta) {
         g.strokeStyle = "#c9561a";
         g.lineWidth = 4;
         g.strokeRect(x - 3, y - 3, w + 6, h + 6);
-      } else if (sure && status >= 3) {          // How sure?: blurry ones washed orange, best guesses dotted
-        if (status === 4) { g.fillStyle = "rgba(232, 150, 60, .22)"; g.fillRect(x, y, w, h); }
-        g.setLineDash(status === 4 ? [] : [4, 4]);
-        g.strokeStyle = status === 4 ? "rgba(214, 120, 30, .9)" : "rgba(120, 80, 30, .7)";
-        g.lineWidth = 2;
-        g.strokeRect(x, y, w, h);
-        g.setLineDash([]);
+      } else if (sure) {                         // every line the OCR read, washed by how sure it is
+        g.fillStyle = SHADE[status];
+        g.fillRect(x, y, w, h);
+        if (status >= 3) {                       // and the doubtful ones outlined: best guesses dotted, blurry solid
+          g.setLineDash(status === 4 ? [] : [4, 4]);
+          g.strokeStyle = status === 4 ? "rgba(214, 120, 30, .9)" : "rgba(120, 80, 30, .7)";
+          g.lineWidth = 2;
+          g.strokeRect(x, y, w, h);
+          g.setLineDash([]);
+        }
       }
     }
   }
@@ -925,6 +956,7 @@ document.addEventListener("pointerdown", e => { if (!e.target.closest(".search")
 async function choose([name, pages]) {
   hits.hidden = true;
   q.blur();
+  topBar.classList.remove("searching");
   q.value = name;
   const n = pages[0];
   highlight = { n, name };
@@ -952,9 +984,7 @@ function toast(text) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
 }
 
-// ---------- How sure? and reading help ----------
-let sure = false;
-try { sure = localStorage.getItem("sure") === "1"; } catch {}
+// ---------- Reading help ----------
 function redrawAll() {
   forget();
   show();
@@ -966,13 +996,6 @@ function pageChanged() {
   if (dlg.open) dlg.close();
   redrawAll();
   toast("This page changed since you opened it: it's up to date now. Please try again.");
-}
-function setSure(on) {
-  sure = on;
-  try { localStorage.setItem("sure", on ? "1" : "0"); } catch {}
-  document.getElementById("sure").setAttribute("aria-pressed", String(on));
-  redrawAll();
-  if (on) toast("Faint: the OCR's best guess · Orange: blurry. Tap one to help read it.");
 }
 
 const randomId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
@@ -1007,7 +1030,6 @@ async function entryAt(px, py) {
 async function openEntryAt(px, py) {
   const hit = await entryAt(px, py);
   if (!hit) return false;
-  if (hit.e[5] <= 2) { toast(`${hit.e[4]}: ${STATUS[hit.e[5]].toLowerCase()}. ${WHY[hit.e[5]]}`); return true; }
   openEntry(hit);
   return true;
 }
@@ -1020,9 +1042,7 @@ document.getElementById("names").onclick = async () => {
   if (!shown.length) box.innerHTML = `<p class="small">No names on these pages: turn to a page of the book.</p>`;
   else {
     const datas = await Promise.all(shown.map(k => loadPage(k.n)));
-    box.innerHTML = datas.map((data, i) => `<h3>Page ${shown[i].n}</h3><ol>` + data.e.map((e, j) => e[5] >= 3
-      ? `<li><button type="button" data-p="${i}" data-e="${j}">${unread(e[4]) ? "<i>unread line</i>" : esc(e[4])}<span class="sr"> (${unread(e[4]) ? "neither scan could read it" : STATUS[e[5]].toLowerCase()}: help read it)</span></button></li>`
-      : `<li>${esc(e[4])}</li>`).join("") + "</ol>").join("");
+    box.innerHTML = datas.map((data, i) => `<h3>Page ${shown[i].n}</h3><ol>` + data.e.map((e, j) => `<li><button type="button" data-p="${i}" data-e="${j}">${unread(e[4]) ? "<i>unread line</i>" : esc(e[4])}<span class="sr"> (${unread(e[4]) ? "neither scan could read it" : STATUS[e[5]].toLowerCase()}: see it on the scan)</span></button></li>`).join("") + "</ol>").join("");
     box.onclick = ev => {
       const b = ev.target.closest("button[data-e]");
       if (!b) return;
@@ -1054,11 +1074,19 @@ async function openEntry({ page, scan, e, orig = e }) {
   const wordW = Math.min(CELL_W, (orig[2] - orig[0] + CELL_PAD + 10) * 1.5);
   const room = Math.min(innerWidth - 72, 400);
   // Just the entry's line, as large as fits; or the three lines around it, with the entry outlined.
+  // A name without a crop strip (the OCR was sure of it) is cut from its page's scan, framed as the strips are.
+  const meta = crop == null && !page.hand ? await scanMeta() : null;
   const cropStyle = around => {
-    const k = around ? Math.min(1.33, room / CELL_W) : Math.min(1.67, room / wordW);
+    const k = around ? Math.min(1.33, room / CELL_W) : Math.min(1.67, room / wordW), size = `width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px`;
+    if (crop == null) {
+      const sc = meta.scale, [ox, oy] = meta.offset || [0, 0], kx = (GW / SCAN_W) * sc, ky = (GH / SCAN_H) * sc, c = (1.5 * k) / kx;
+      const x = (orig[0] - CELL_PAD) * kx + ox, y = (orig[1] - 21 + (around ? 0 : 16)) * ky + oy;   // as catalogo_crops.py frames a cell
+      return { k, css: `background-image:url('${SCANS}${SCANS_V}/${scan}.webp');background-size:${meta.width * c}px auto;` +
+        `background-position:-${x * c}px -${y * c}px;${size}` };
+    }
     const cx = (crop % ACROSS) * CELL_W, cy = Math.floor(crop / ACROSS) * CELL_H + (around ? 0 : LINE_Y);
     return { k, css: `background-image:url('${CROPS}${CROPS_V}/${scan}.webp');background-size:${CELL_W * ACROSS * k}px auto;` +
-      `background-position:-${cx * k}px -${cy * k}px;width:${(around ? CELL_W : wordW) * k}px;height:${(around ? CELL_H : LINE_H) * k}px` };
+      `background-position:-${cx * k}px -${cy * k}px;${size}` };
   };
   const id = `${scan}.${col}.${row}`, blank = unread(name);
   highlight = { n: page.n, name, col, row };   // outlined on its page, until the next one
@@ -1068,8 +1096,9 @@ async function openEntry({ page, scan, e, orig = e }) {
   setPath(link);
   dlg.innerHTML = `
     <div class="eh"><h2>${blank ? "Unread line" : `${esc(name)}.`}</h2><span class="chip s${status}">${blank ? "Unread" : STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
-    <p class="why">${blank ? "Neither scan could read this line, so it has no reading yet. Can you read it?" : WHY[status]}</p>
-    ${CROPS && crop != null ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
+    <p class="why">${blank ? "Neither scan could read this line, so it has no reading yet. Can you read it?" : WHY[status] +
+      (status <= 2 ? " Still, an OCR can be wrong: if the scan shows something else, tell us." : "")}</p>
+    ${CROPS && (crop != null || (meta && meta.scale && meta.width)) ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
       <figcaption>The scan, page ${page.n} · digitized by Google from the University of Michigan's copy · <button type="button" class="around">Show the lines around it</button></figcaption></figure>` : ""}
     <p class="small order" hidden></p>
     ${raw && !blank ? `<p class="small">OCR reading: <b>${esc(name)}</b> · the other scan's OCR: <b>${esc(raw)}</b></p>` : ""}
@@ -1242,7 +1271,7 @@ const up = e => {
       const x = e.clientX, y = e.clientY;
       setTimeout(async () => {
         if (lastTap !== now) return;   // it became a double tap
-        if (sure && await openEntryAt(x, y)) return;
+        if (await openEntryAt(x, y)) return;
         if (view.zoom <= 1.05) {
           if (x < innerWidth * 0.22) prev(); else if (x > innerWidth * 0.78 || closedBook()) next();
         }
@@ -1262,36 +1291,69 @@ canvas.addEventListener("wheel", e => {
 document.getElementById("next").onclick = next;
 document.getElementById("prev").onclick = prev;
 document.getElementById("unzoom").onclick = frame;
-document.getElementById("layout").onclick = () => { const k = Object.keys(VIEWS); setView(k[(k.indexOf(pageView) + 1) % k.length]); };
-document.getElementById("sure").onclick = () => setSure(!sure);
+document.getElementById("layout").onclick = openViews;
 document.getElementById("info").onclick = () => document.getElementById("about").showModal();
-// Go to a page: the page label turns into a box for a page number (or a surname, handed to the search).
-const where = document.getElementById("where"), jump = document.getElementById("jump");
-where.onclick = () => {
-  where.hidden = true;
-  jump.hidden = false;
-  jump.value = "";
-  jump.focus();
-};
-function endJump(refocus) {
-  if (jump.hidden) return;
-  jump.hidden = true;
-  where.hidden = false;
-  if (refocus) where.focus();
+// Go to: the page label opens the book's letters, A to Z (each section's first page), and a box for a page number
+// (or a surname, handed to the search).
+const where = document.getElementById("where"), indexDlg = document.getElementById("index"), jump = document.getElementById("jump");
+let sections = null;
+// The book's sections, A to Z with Ll after L: each starts on the first page that has it (pages.json lists the
+// sections on each page, from build_book.py, so one that starts partway down a page is found there).
+function bookSections() {
+  if (sections) return sections;
+  sections = [];
+  for (const p of PAGES) for (const k of p.keys || []) if (!sections.some(s => s.k === k)) sections.push({ k, n: p.n });
+  return sections;
 }
-jump.addEventListener("blur", () => { if (document.hasFocus()) endJump(false); });   // not when the window loses focus
-jump.addEventListener("keydown", e => {
-  if (e.key === "Escape") { e.preventDefault(); endJump(true); }
-  if (e.key !== "Enter") return;
+where.onclick = () => {
+  const kind = FACES[visibleFace()], here = kind && kind.n;
+  const cur = here ? bookSections().filter(s => s.n <= here).pop() : null;
+  indexDlg.querySelector(".letters").innerHTML = bookSections().map(s =>
+    `<button type="button" data-n="${s.n}"${cur && s.k === cur.k ? ' aria-current="true"' : ""} aria-label="${s.k}, from page ${s.n}">${s.k}</button>`).join("");
+  jump.value = "";
+  indexDlg.showModal();
+};
+indexDlg.querySelector(".letters").onclick = e => {
+  const b = e.target.closest("button[data-n]");
+  if (!b) return;
+  indexDlg.close();
+  goToPage(+b.dataset.n);
+};
+indexDlg.querySelector(".x").onclick = () => indexDlg.close();
+indexDlg.querySelector(".goto").onsubmit = e => {
   e.preventDefault();
   const v = jump.value.trim();
-  endJump(true);
   if (!v) return;
+  indexDlg.close();
   if (/^\d+$/.test(v)) {
     const n = +v, p = PAGES.find(x => x.n === n);
     if (p) goToPage(n); else toast("No such page");
-  } else { q.value = v; q.dispatchEvent(new Event("input")); q.focus(); }
-});
+  } else { q.value = v; q.dispatchEvent(new Event("input")); openSearch(); q.focus(); }
+};
+
+// On a phone, search is an icon, so the title shows in full: it opens the box across the bar, and closes left empty.
+const topBar = document.querySelector(".bar.top");
+const openSearch = () => topBar.classList.add("searching");
+document.getElementById("searchbtn").onclick = () => { openSearch(); q.focus(); };
+q.addEventListener("blur", () => setTimeout(() => { if (!q.value && document.activeElement !== q) topBar.classList.remove("searching"); }, 200));
+
+// Light or dark: the device's setting until the reader picks one (kept, and applied before the page paints).
+const themeBtn = document.getElementById("theme"), darkQuery = matchMedia("(prefers-color-scheme: dark)");
+const isDark = () => (document.documentElement.dataset.theme || (darkQuery.matches ? "dark" : "light")) === "dark";
+function themeButton() {
+  const label = isDark() ? "Light mode" : "Dark mode";
+  themeBtn.setAttribute("aria-label", label);
+  themeBtn.title = label;
+  document.querySelector('meta[name="theme-color"]').content = isDark() ? "#1d1712" : "#f1eee8";
+}
+themeBtn.onclick = () => {
+  const theme = isDark() ? "light" : "dark";
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem("theme", theme); } catch {}
+  themeButton();
+};
+darkQuery.addEventListener?.("change", themeButton);
+themeButton();
 addEventListener("keydown", e => {
   if (storyOpen || e.target.closest?.("input, textarea, select, dialog")) return;
   if (e.key === "ArrowRight") next();
@@ -1368,7 +1430,7 @@ async function followPath(path) {
     if (page.missing) return true;
     const data = await loadPage(page.n);
     const e = data.e.filter(x => x[4] === name)[(+k || 1) - 1];
-    if (e && e[5] >= 3) { if (!sure) setSure(true); openEntry({ page, scan: data.scan, e }); }
+    if (e && e[5] >= 3) { openEntry({ page, scan: data.scan, e }); }
     else if (e) { highlight = { n: page.n, name }; redrawAll(); }
     else toast(`“${name}” isn't on page ${page.n} any more: readers may have fixed it.`);
     return true;
@@ -1390,7 +1452,7 @@ async function follow(hash) {
       goToPage(page.n, false);
       const data = await loadPage(page.n);
       const e = data.e.find(x => x[6] === +ent[2] && x[7] === +ent[3]);
-      if (e && e[5] >= 3) { if (!sure) setSure(true); openEntry({ page, scan: data.scan, e }); }
+      if (e) openEntry({ page, scan: data.scan, e });   // an entry's link opens it, sure or not
       return true;
     }
   }
@@ -1421,7 +1483,6 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz, tilt: view.tt });
   render();
   viewButton();
-  document.getElementById("sure").setAttribute("aria-pressed", String(sure));
   const linked = (await follow(hash)) || (await followPath(path));
   if (linked) {   // a link to a page, a name or an entry: straight there, from above
     Object.assign(view, { tilt: view.tt });
