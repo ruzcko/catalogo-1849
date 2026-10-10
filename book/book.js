@@ -297,15 +297,16 @@ function drawPrinted(g, side, page, data) {
   paper(g, side);
   const entries = layoutOf(data);
   const sizes = data.e.map(e => e[3] - e[1]).sort((a, b) => a - b);
-  let size = Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
-  if (tidy && data.pitch) size = Math.min(size, Math.round(data.pitch * S * 0.86));   // even lines: fit the type to them
+  // Even lines: the type as large as they allow. In place: the size of the printed type.
+  const size = tidy && data.pitch ? Math.round(data.pitch * S * 0.9) : Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
+  const headY = tidy ? TIDY.head : 118, footY = tidy ? TIDY.foot : 1428;
   // The reprint's thumb letter, then the running head: page number and letter, as on the scanned page.
   g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
   g.fillStyle = INK;
   g.fillText(page.letter, (side === "R" ? SCAN_W - 50 : 22) * S, 52 * S);
   g.font = `${Math.round(17 * S)}px ${FONT}`;
-  g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
-  centred(g, page.letter, 118 * S, Math.round(17 * S));
+  g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, headY * S);
+  centred(g, page.letter, headY * S, Math.round(17 * S));
   g.font = `${size}px ${FONT}`;
   for (const e of entries) {
     const [x0, y0, x1, y1, name, status] = e;
@@ -334,7 +335,7 @@ function drawPrinted(g, side, page, data) {
     g.fillText(name + ".", x0 * S, y1 * S - 2 * S, Math.max(x1 - x0, 40) * S * 1.12);
     g.globalAlpha = 1;
   }
-  centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
+  centred(g, `[${page.n}]`, footY * S, Math.round(17 * S));
 }
 
 // Views, picked in the View panel: "tags" (the default) sets the names in even columns, each shaded by how sure the
@@ -357,18 +358,19 @@ if (pageView === "tidy") pageView = "plain";
 if (!VIEWS[pageView]) pageView = "tags";
 let tidy = pageView === "tags" || pageView === "plain";
 let sure = pageView === "tags" || pageView === "scan";   // shading by certainty
+// The typeset views use the whole page, margin to margin, with the running head and the page number pulled in to the
+// edges; the reprint packs about 72 lines a column, so a page with fewer keeps the same line spacing (the same type).
+const TIDY = { left: 46, right: SCAN_W - 46, top: 112, bottom: 1436, rows: 72, head: 90, foot: 1468 };
 function layoutOf(data) {
   if (!tidy) return data.e;
   if (data.tidy) return data.tidy;
   const e = data.e, median = a => a.sort((x, y) => x - y)[a.length >> 1];
   const cols = Math.max(...e.map(x => x[6] || 1));
-  const left = Math.min(...e.map(x => x[0])), right = Math.max(...e.map(x => x[2]));
   const top = Math.min(...e.map(x => x[1]));
-  const h = median(e.map(x => x[3] - x[1])) || 14;
   // Line pitch: the usual step between one line and the next in a column.
   const steps = [];
   for (let i = 1; i < e.length; i++) if (e[i][6] === e[i - 1][6]) { const d = e[i][1] - e[i - 1][1]; if (d > 8 && d < 30) steps.push(d); }
-  let pitch = steps.length ? median(steps) : 16.5;
+  const pitch = steps.length ? median(steps) : 16.5;
   // The scan is slightly tilted, so each column counts lines from its own first line (when that line is near the
   // top; a column whose first lines the OCR missed counts from the page's top instead).
   const colTop = {};
@@ -383,12 +385,11 @@ function layoutOf(data) {
     slotted.push([x, slot]);
   }
   const last = Math.max(...slotted.map(([, sl]) => sl));
-  if (top + (last + 1) * pitch > 1415) pitch = (1415 - top) / (last + 1);   // keep clear of the page number
-  const colW = (right - left) / cols;
-  data.pitch = pitch;
+  const lines = (TIDY.bottom - TIDY.top) / Math.max(last + 1, TIDY.rows), colW = (TIDY.right - TIDY.left) / cols;
+  data.pitch = lines;
   data.tidy = slotted.map(([x, slot]) => {
-    const x0 = left + ((x[6] || 1) - 1) * colW, y0 = top + slot * pitch;
-    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.92), Math.round(y0 + h), ...x.slice(4)];   // name, status, column, row, other reading, crop
+    const x0 = TIDY.left + ((x[6] || 1) - 1) * colW, y0 = TIDY.top + slot * lines;
+    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.94), Math.round(y0 + lines * 0.8), ...x.slice(4)];   // name, status, column, row, other reading, crop
   });
   return data.tidy;
 }
@@ -825,7 +826,7 @@ function frame() {
 
 function fitDistance() {
   const [x0, x1] = span();
-  const vw = (x1 - x0) * (mode === "single" ? 1.04 : 1.06), vh = H * 1.04;
+  const vw = (x1 - x0) * 1.03, vh = H * 1.035;
   const usable = (innerHeight - TOP() - BOT()) / innerHeight;
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect * freeW()));
