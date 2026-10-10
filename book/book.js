@@ -647,7 +647,7 @@ function prefetch() {
 }
 
 // Start turning one leaf (dir +1 forward, -1 back): set up what's on the leaf and what's revealed beneath it.
-function startTurn(dir) {
+function startTurn(dir, peek = false) {
   if (mode === "single") {
     if (dir > 0 ? si >= SINGLE.length - 1 : si <= 0) return null;
     setMap(leafFront, dir > 0 ? SINGLE[si] : SINGLE[si - 1], "R");
@@ -663,7 +663,7 @@ function startTurn(dir) {
   leaf.visible = true;
   const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
   T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
-  if (closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
+  if (!peek && closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
   // Closing a cover: it is the only leaf on its side, so that side's stack and board go with it, not stay behind.
   if (T.rigid && mode === "spread") {
     if (dir < 0 && cur === 1) { stackL.visible = boardL.visible = false; shadow.scale.x = 0.55; shadow.position.x = W / 2; }
@@ -697,7 +697,7 @@ function stepTurn() {
   T.t = a.from + (a.goal - a.from) * e;
   T.twist *= a.fromDrag ? 0.94 : 1;
   drawTurn();
-  if (k < 1) requestAnimationFrame(stepTurn); else endTurn();
+  if (k < 1) requestAnimationFrame(stepTurn); else if (!T.hold) endTurn();
 }
 function endTurn() {
   if (!T) return;
@@ -879,13 +879,13 @@ function showStory() {
   story.classList.remove("closing");
   story.scrollTop = 0;
 }
-function closeStory() {
+function closeStory(open) {
   if (!storyOpen) return;
   storyOpen = false;
   try { localStorage.setItem("story", "seen"); } catch {}
   story.classList.add("closing");
   setTimeout(() => { story.hidden = true; story.classList.remove("closing"); }, reduceMotion ? 0 : 600);
-  openBook(reduceMotion ? 0 : 650);
+  if (open) openBook(reduceMotion ? 0 : 650); else inviteOpen(800);
 }
 function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
   if (document.hidden) {
@@ -894,8 +894,53 @@ function openBook(delay) {   // the front cover lifts, if the book is still clos
   }
   setTimeout(() => { if (!T && !storyOpen && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
 }
-story.querySelector(".skipbook").onclick = closeStory;
-story.querySelector(".open").onclick = closeStory;
+story.querySelector(".skipbook").onclick = () => closeStory(false);
+story.querySelector(".open").onclick = () => closeStory(true);
+
+// The closed book waits for the reader: on a computer the cover lifts a little under the pointer, and a click opens
+// it from there; a touch screen gets one small lift, as an invitation, and a tap opens it.
+const PEEK = 0.09;                                // how far the cover lifts, as a part of a whole turn
+let peeking = false, invited = false;
+const frontClosed = () => (mode === "single" ? si === 0 : cur === 0);
+function peekCover(on) {
+  if (reduceMotion || storyOpen || view.zoom > 1.05) return;
+  if (on && !peeking && !T && frontClosed() && startTurn(1, true)) {
+    peeking = true;
+    T.hold = true;
+    settle(PEEK);
+  } else if (!on && peeking && T) {
+    peeking = false;
+    T.hold = false;
+    settle(0);
+  }
+}
+function openCover() {   // a click or a tap on the closed book: open it, from the lifted cover if it's lifted
+  if (peeking && T) {
+    peeking = false;
+    T.hold = false;
+    view.tt = 0;
+    ease();
+    settle(1);
+  } else next();
+}
+const overBook = (x, y) => { const p = worldAt(x, y), [x0, x1] = span(); return p.x >= x0 && p.x <= x1 && Math.abs(p.y) <= H / 2; };
+canvas.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse" || pointers.size) return;
+  const over = !T || peeking ? frontClosed() && view.zoom <= 1.05 && overBook(e.clientX, e.clientY) : false;
+  canvas.style.cursor = over ? "pointer" : "";
+  peekCover(over);
+});
+canvas.addEventListener("pointerleave", () => { canvas.style.cursor = ""; peekCover(false); });
+function inviteOpen(delay) {
+  if (document.hidden) { addEventListener("visibilitychange", () => inviteOpen(delay), { once: true }); return; }
+  setTimeout(() => {
+    if (invited || storyOpen || !frontClosed()) return;
+    invited = true;
+    const touch = matchMedia("(hover: none)").matches;
+    toast(touch ? "Tap the book to open it" : "Click the book to open it");
+    if (touch) { peekCover(true); setTimeout(() => peekCover(false), 900); }
+  }, delay);
+}
 document.getElementById("restory").onclick = () => {
   document.getElementById("about").close();
   goToFace(0, false);   // back to the closed book, so it opens again after the story
@@ -1246,8 +1291,20 @@ canvas.addEventListener("pointermove", e => {
   }
   // Not zoomed: a sideways drag turns the page, following the finger.
   if (!drag.turning && drag.moved && Math.abs(dx) > Math.abs(dy) * 1.2) {
-    if (T) finishTurn();
-    if (!startTurn(dx < 0 ? 1 : -1)) { drag = null; return; }
+    if (peeking && T && dx < 0) {                 // the lifted cover: the drag takes it from where it is
+      peeking = false;
+      T.hold = false;
+      T.anim = null;
+      view.tt = 0;
+      ease();
+    } else if (peeking && T) {                    // dragged the other way: let the cover down
+      peekCover(false);
+      drag = null;
+      return;
+    } else {
+      if (T) finishTurn();
+      if (!startTurn(dx < 0 ? 1 : -1)) { drag = null; return; }
+    }
     drag.turning = true;
     drag.t0 = T.t;
     T.twist = Math.max(-1, Math.min(1, drag.w.y / (H / 2))) * (T.dir > 0 ? 1 : -1);   // grabbed high or low
@@ -1277,6 +1334,7 @@ const up = e => {
     drag = null;
     return;
   }
+  if (!drag.moved && view.zoom <= 1.05 && frontClosed() && overBook(e.clientX, e.clientY)) { drag = null; openCover(); return; }
   if (!drag.moved) {
     const now = performance.now();
     if (now - lastTap < 300) {
@@ -1512,6 +1570,6 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
     render();
     let seen = false;
     try { seen = localStorage.getItem("story") === "seen"; } catch {}
-    if (seen) openBook(900); else showStory();
+    if (seen) inviteOpen(900); else showStory();
   }
 })();
