@@ -115,39 +115,58 @@ rightPage.geometry.translate(W / 2, 0, 0);
 scene.add(leftPage, rightPage);
 
 // The leaf being turned: a finely divided sheet, bent on the graphics card. It turns about the spine (x = 0), from
-// angle 0 (lying on the right) to π (lying on the left). Along the sheet the angle changes by k per unit, so it bows
-// like paper (a circular arc, in closed form), and "twist" makes one corner lead, as when it's grabbed high or low.
-// Its shade comes from how the surface faces the reader: darker as it turns away, a faint sheen along the crest.
+// angle 0 (lying on the right) to π (lying on the left), and it curls as paper does: the sheet rolls round a line
+// across it (the curl), flat on either side of the roll. The line leans with where the page was grabbed, so a corner
+// peels up first; early in a turn the roll is out by the free edge and the edge leads, and as the page comes over the
+// whole sheet bows and the edge trails as it lands. In the sheet's own frame: the part before the curl lies flat,
+// the roll (from uC, uL long) turns it by uDelta, the rest goes on straight; then the whole sheet turns by uThetaS
+// about the spine. Its shade comes from how the surface faces the reader, with a sheen along the roll.
 const LEAF_VS = `
-uniform float uTheta, uK, uTwist, uHalfH, uW;
+uniform float uThetaS, uDelta, uC, uL, uAlpha;
 varying vec2 vUv;
-varying float vNz;
+varying float vNz, vRoll;
 void main() {
   vUv = uv;
-  float u = position.x, v = position.y;
-  float k = uK + uTwist * (v / uHalfH) / uW;
-  float a = uTheta + k * u;
-  vec3 p = abs(k) < 1e-4 ? vec3(u * cos(uTheta), v, u * sin(uTheta))
-                         : vec3((sin(a) - sin(uTheta)) / k, v, (cos(uTheta) - cos(a)) / k);
-  vNz = cos(a);
+  vec2 n = vec2(cos(uAlpha), -sin(uAlpha)), along = vec2(sin(uAlpha), cos(uAlpha));
+  float s = dot(position.xy, n), w = dot(position.xy, along);
+  float X = s, Z = 0.0, phi = 0.0;
+  vRoll = 0.0;
+  if (abs(uDelta) > 1e-4 && s > uC) {
+    float R = uL / uDelta;
+    if (s < uC + uL) {
+      phi = uDelta * (s - uC) / uL;
+      X = uC + R * sin(phi);
+      Z = R * (1.0 - cos(phi));
+      vRoll = sin(3.14159265 * (s - uC) / uL);
+    } else {
+      float r = s - uC - uL;
+      phi = uDelta;
+      X = uC + R * sin(uDelta) + r * cos(uDelta);
+      Z = R * (1.0 - cos(uDelta)) + r * sin(uDelta);
+    }
+  }
+  vec2 q = X * n + w * along;
+  float c = cos(uThetaS), sn = sin(uThetaS);
+  vec3 p = vec3(q.x * c - Z * sn, q.y, q.x * sn + Z * c);
+  vNz = cos(phi) * c - sin(phi) * n.x * sn;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 const LEAF_FS = `
 uniform sampler2D map;
 uniform float uBack;
 varying vec2 vUv;
-varying float vNz;
+varying float vNz, vRoll;
 void main() {
   vec2 uv = uBack > 0.5 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
   float facing = uBack > 0.5 ? -vNz : vNz;
-  float shade = 0.66 + 0.34 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0);
+  float shade = 0.64 + 0.36 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0) + 0.05 * vRoll * clamp(facing, 0.0, 1.0);
   gl_FragColor = vec4(texture2D(map, uv).rgb * shade, 1.0);
   #include <colorspace_fragment>
 }`;
-const SEG_X = 72, SEG_Y = 24;
+const SEG_X = 72, SEG_Y = 48;   // fine both ways: the curl's line can lean
 const leafGeo = new THREE.PlaneGeometry(W, H, SEG_X, SEG_Y);
 leafGeo.translate(W / 2, 0, 0);
-const bend = { uTheta: { value: 0 }, uK: { value: 0 }, uTwist: { value: 0 }, uHalfH: { value: H / 2 }, uW: { value: W } };
+const bend = { uThetaS: { value: 0 }, uDelta: { value: 0 }, uC: { value: 0 }, uL: { value: W }, uAlpha: { value: 0 } };
 const leafMat = back => new THREE.ShaderMaterial({ vertexShader: LEAF_VS, fragmentShader: LEAF_FS,
   side: back ? THREE.BackSide : THREE.FrontSide, uniforms: { ...bend, map: { value: null }, uBack: { value: back ? 1 : 0 } } });
 const leafFront = new THREE.Mesh(leafGeo, leafMat(false));
@@ -164,22 +183,40 @@ const castShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, H),
 castShadow.visible = false;
 scene.add(castShadow);
 
-// Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back; the free edge
-// lags behind the spine. twist: -1..1, which corner leads (where it was grabbed).
+// Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back. twist: -1..1,
+// where it was grabbed, high or low, for the way it turns (dir); the corner nearer the grab peels first.
 function poseLeaf(t, dir, twist = 0) {
-  const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't bow
-  const lift = Math.sin(Math.PI * t), theta = Math.PI * t, k = rigid ? 0 : -dir * 0.9 * lift / W;
-  bend.uTheta.value = theta;
-  bend.uK.value = k;
-  bend.uTwist.value = rigid ? 0 : 0.35 * twist * lift;
+  const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't curl
+  const p = dir > 0 ? t : 1 - t, lift = Math.sin(Math.PI * p);   // how far through the turn, in its own direction
+  // The spine's angle and the free edge's, for a forward turn: the edge leads at first, then trails as it lands.
+  const mean = Math.PI * p, lead = rigid ? 0 : 2.2 * lift * (1 - 1.5 * p);
+  const s0 = Math.min(Math.PI, Math.max(0, mean - lead / 2)), e0 = Math.min(Math.PI, Math.max(0, mean + lead / 2));
+  const k = smooth(0, 0.45, p);                   // the roll starts out by the edge, and spreads to the whole sheet
+  bend.uThetaS.value = dir > 0 ? s0 : Math.PI - s0;
+  bend.uDelta.value = (dir > 0 ? 1 : -1) * (e0 - s0);
+  bend.uC.value = 0.5 * W * (1 - k);
+  bend.uL.value = W * (0.4 + 0.6 * k);
+  bend.uAlpha.value = rigid ? 0 : -0.5 * twist * (dir > 0 ? 1 : -1);
   // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
-  const edge = Math.abs(k) < 1e-6 ? W * Math.cos(theta) : (Math.sin(theta + k * W) - Math.sin(theta)) / k;
+  const edge = curlX(W);
   const width = 0.5 * W * lift + 0.02;
   const onRight = edge >= 0;
   castShadow.visible = lift > 0.01;
   castShadow.scale.x = onRight ? width : -width;
   castShadow.position.x = onRight ? Math.min(edge, W) + width / 2 : Math.max(edge, -W) - width / 2;
   castShadow.material.opacity = 0.5 * lift;
+}
+// Where a point of the sheet's middle line (u from the spine) is, across the book, as the shader puts it.
+function curlX(u) {
+  const { uThetaS: { value: ts }, uDelta: { value: d }, uC: { value: c }, uL: { value: l }, uAlpha: { value: al } } = bend;
+  const s = u * Math.cos(al);
+  let X = s, Z = 0;
+  if (Math.abs(d) > 1e-4 && s > c) {
+    const R = l / d;
+    if (s < c + l) { const phi = d * (s - c) / l; X = c + R * Math.sin(phi); Z = R * (1 - Math.cos(phi)); }
+    else { const r = s - c - l; X = c + R * Math.sin(d) + r * Math.cos(d); Z = R * (1 - Math.cos(d)) + r * Math.sin(d); }
+  }
+  return (X * Math.cos(al) + u * Math.sin(al) ** 2) * Math.cos(ts) - Z * Math.sin(ts);
 }
 
 // ---------- Drawing pages ----------
@@ -746,7 +783,7 @@ function startTurn(dir, peek = false) {
   }
   leaf.visible = true;
   const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
-  T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
+  T = { dir, t: dir > 0 ? 0 : 1, twist: -0.4 * dir, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
   if (mode === "spread" && T.rigid) { T.cover = moving === 0 ? "F" : "B"; leaf.visible = false; }
   if (!peek && closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
   // Closing a cover: the shadow under the book comes in to the closed book's size with it.
