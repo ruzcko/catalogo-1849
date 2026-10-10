@@ -1335,7 +1335,9 @@ indexDlg.querySelector(".goto").onsubmit = e => {
 const topBar = document.querySelector(".bar.top");
 const openSearch = () => topBar.classList.add("searching");
 document.getElementById("searchbtn").onclick = () => { openSearch(); q.focus(); };
-q.addEventListener("blur", () => setTimeout(() => { if (!q.value && document.activeElement !== q) topBar.classList.remove("searching"); }, 200));
+const closeSearch = () => { if (!q.value && document.activeElement !== q) topBar.classList.remove("searching"); };
+q.addEventListener("blur", () => setTimeout(closeSearch, 200));
+document.addEventListener("pointerdown", e => { if (!topBar.contains(e.target)) setTimeout(closeSearch, 0); });   // a tap elsewhere
 
 // Light or dark: the device's setting until the reader picks one (kept, and applied before the page paints).
 const themeBtn = document.getElementById("theme"), darkQuery = matchMedia("(prefers-color-scheme: dark)");

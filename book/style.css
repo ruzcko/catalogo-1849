@@ -106,7 +106,9 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
   .bar.bottom { gap: 6px; padding-left: 8px; padding-right: 8px; }
   .bar.bottom .icon { width: 36px; height: 36px; }
   .layout { padding: 6px 9px; font-size: 13px; }
-  .title b { font-size: 15px; }
+  .title b { font-size: 15px; white-space: normal; line-height: 1.08; }   /* the title in full, on two lines */
+  .bar.top { gap: 8px; }
+  .bar.top .icon { width: 36px; height: 36px; }
   /* Search is an icon, so the title shows in full; tapping it opens the box across the bar. */
   .bar.top #searchbtn { display: grid; margin-left: auto; }
   .bar.top .search { display: none; }
@@ -205,7 +207,8 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .index .letters button { padding: 8px 0; border-radius: 10px; background: var(--tint); font-family: "IM Fell English SC", Georgia, serif; font-size: 20px; }
 .index .letters button[aria-current="true"] { outline: 2px solid var(--accent); }
 .index .goto { display: flex; gap: 8px; align-items: center; }
-.index .goto label { display: flex; gap: 8px; align-items: center; flex: 1; color: var(--muted); }
+.index .goto label { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; color: var(--muted); }
+.index .goto button { flex: none; }
 .index .goto input { flex: 1; min-width: 0; font: inherit; font-size: 17px; color: var(--ink); background: var(--tint);
   border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
 
