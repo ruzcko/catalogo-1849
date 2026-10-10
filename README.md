@@ -63,18 +63,21 @@ This repository contains only the transcribed text, not the page images.
 
 ## Files
 
-`catalogo_1849.csv`: one row per printed entry.
+`catalogo_1849.csv`: one row per printed entry, in the book's order (page, block, column, row).
 
 | Column | Meaning |
 | --- | --- |
 | `book_page` | Page number printed in the book's name list |
 | `block` | Where a new letter starts mid-page, the book runs the heading across the page and starts the new section in all six columns below it: blocks number those bands from the top (1 on most pages). The numbers keep their order but can skip one (1, 2, 4), and are empty on the two hand-typed pages. The page reads block by block, each block column by column |
 | `column`, `row` | Position on the page: column 1–6, then row from the top of the column (row only, on hand-typed pages) |
+| `letter` | The book's section the entry is in: A to Z with Ll after L, and no I, K, W or X sections (the few I and K names are filed under Y and Q). Found from the book's order, not from the entry's own reading, so a misread first letter doesn't change it: an entry whose first letter doesn't match its section is very likely misread |
 | `entry` | The name as read (by OCR, or by a person on the hand-typed pages), lowercase, as printed (accents kept) |
 | `status` | How much to trust it (below) |
 | `confidence` | The OCR's confidence in the line, 0–1 (empty on hand-typed pages) |
 | `google_reading`, `issuu_reading`, `familysearch_reading` | What each scan's OCR read for this line (empty where that scan has no line here) |
 | `x0`, `y0`, `x1`, `y1` | The entry's box on Google's scan of the page, in pixels of the page drawn 2,400 × 3,882 |
+| `issuu_page`, `issuu_x0` … `issuu_y1` | The Issuu scan's page number for this book page, and the line's box on it, in pixels of the page as published there (910 wide). Empty where that scan has no line here |
+| `familysearch_x0` … `familysearch_y1` | The line's box on FamilySearch's microfilm of the page (its own page, same number as `book_page`), in pixels of the page image (about 1,500 wide). Empty where the microfilm has no line here |
 
 | `status` | Meaning |
 | --- | --- |
