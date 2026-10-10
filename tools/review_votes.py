@@ -93,7 +93,8 @@ def queue(votes, book, min_votes, decisions):
             continue
         items.append({"id": eid, "n": b["n"], "scan": b["scan"], "ours": e[4], "status": STATUS[e[5]], "crop": e[9],
                       "box": e[:4], "google": row.get("google_reading", ""), "issuu": row.get("issuu_reading", ""),
-                      "x0": row.get("x0", ""), "y0": row.get("y0", ""), "candidates": cands, "days": days.get(eid, [])})
+                      "x0": row.get("x0", ""), "y0": row.get("y0", ""), "gbox": [row.get(k, "") for k in ("x0", "y0", "x1", "y1")],
+                      "candidates": cands, "days": days.get(eid, [])})
     return items, unknown
 
 
@@ -180,6 +181,19 @@ def main():
                 self.file(BOOK / p.lstrip("/"), "application/json")
             elif a.strips and re.fullmatch(r"/strips/\d{1,3}\.webp", p):
                 self.file(Path(a.strips) / p.split("/")[-1], "image/webp")
+            elif m := re.fullmatch(r"/cut/(\d{1,3}\.\d{1,2}\.\d{1,3})", p):
+                # A name without a crop strip (the OCR was sure of it): its lines cut from Google's page render, if the
+                # renders are on this machine (as review_reference.py does).
+                import review_reference
+                it = next((x for x in items if x["id"] == m.group(1)), None)
+                if not (it and all(it["gbox"]) and review_reference.PAGES.is_dir()):
+                    return self.send("not found", "text/plain", 404)
+                png, top, h = review_reference.cut(it["n"], it["gbox"])
+                self.send_response(200)
+                self.send_header("content-type", "image/png")
+                self.send_header("x-line", f"{top},{h}")
+                self.end_headers()
+                self.wfile.write(png)
             else:
                 self.send("not found", "text/plain", 404)
 
@@ -269,8 +283,15 @@ async function show() {
   ctx = await entryContext(env, new Request(location.origin + "/"), it.id);
   pick = 0;
   const cx = (it.crop % ACROSS) * CELL_W, cy = Math.floor(it.crop / ACROSS) * CELL_H;
-  const crop = it.crop == null ? `<p class="muted">No crop for this entry.</p>` :
+  let crop = it.crop == null ? `<p class="muted">No crop for this entry.</p>` :
     `<div class="crop" style="background-image:url('${CROPS}${it.scan}.webp');background-position:-${cx}px -${cy}px;width:${CELL_W}px;height:${CELL_H}px"><i style="top:${LINE_Y}px;height:${LINE_H}px"></i></div>`;
+  if (it.crop == null) {   // no strip for a sure name: its lines cut from the page render, when they're here
+    const r = await fetch(`/cut/${it.id}`);
+    if (r.ok) {
+      const [top, h] = (r.headers.get("x-line") || "0,0").split(",").map(Number);
+      crop = `<div class="crop"><img src="${URL.createObjectURL(await r.blob())}" alt="The scan around this line" style="display:block"><i style="top:${top - 3}px;height:${h + 6}px"></i></div>`;
+    }
+  }
   const rule = r => { const why = ctx ? check(normalise(r), ctx) : "entry not found"; return why ? `<span class="no">${esc(why)}</span>` : `<span class="ok">fits the book's rules</span>`; };
   box.innerHTML = `
     <h2>${it.ours === "?" ? "Unread line" : esc(it.ours) + "."}</h2>
