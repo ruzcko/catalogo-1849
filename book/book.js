@@ -196,7 +196,8 @@ function poseLeaf(t, dir, twist = 0) {
   bend.uDelta.value = (dir > 0 ? 1 : -1) * (e0 - s0);
   bend.uC.value = 0.5 * W * (1 - k);
   bend.uL.value = W * (0.4 + 0.6 * k);
-  bend.uAlpha.value = rigid ? 0 : -0.5 * twist * (dir > 0 ? 1 : -1);
+  // The lean is for the peel; it straightens as the page comes down, so it lands square on the stack.
+  bend.uAlpha.value = rigid ? 0 : -0.5 * twist * (dir > 0 ? 1 : -1) * (1 - smooth(0.55, 0.9, p));
   // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
   const edge = curlX(W);
   const width = 0.5 * W * lift + 0.02;
