@@ -1026,7 +1026,6 @@ function showStory(fromTop = false) {
 function closeStory(open) {
   if (!storyOpen) return;
   storyOpen = false;
-  clearTimeout(stepTimer);
   try { localStorage.setItem("story", "seen"); } catch {}
   story.classList.add("out");
   storyTab.setAttribute("aria-expanded", "false");
@@ -1034,35 +1033,19 @@ function closeStory(open) {
   ease();
   if (open) openBook(reduceMotion ? 0 : 450); else inviteOpen(600);
 }
-// Beside the book, the history tells its story in steps (data-step on each part) and the book follows as the reader
-// scrolls: shut on the desk, open at the title page, through the first letters A to D, out at a page of names. A step
-// moves the book only when the reader scrolls to it, not when the panel opens, so opening it never pulls the book away.
-let step = null, stepTimer = 0;
-const STEPS = {
-  closed: () => goToFace(0),
-  title: () => goToFace(2),
-  letters: () => {
-    const first = bookSections().slice(0, 4);
-    let i = 0;
-    const go = () => { goToPage(first[i].n); if (++i < first.length) stepTimer = setTimeout(go, 1500); };
-    go();
-  },
-  page: () => { const s = bookSections(); goToPage(s[Math.floor(s.length / 2)].n); },
-};
-function toStep(name) {
-  if (name === step) return;
-  step = name;
-  clearTimeout(stepTimer);
-  if (storyOpen && beside() && STEPS[name]) STEPS[name]();
-}
-const stepper = new IntersectionObserver(entries => {
-  for (const e of entries) {
-    if (!e.isIntersecting) continue;
-    for (const s of story.querySelectorAll(".slide")) s.classList.toggle("on", s === e.target);
-    toStep(e.target.dataset.step);
-  }
-}, { root: story, rootMargin: "-42% 0px -48% 0px" });   // the step across the middle of the panel
-for (const s of story.querySelectorAll(".slide")) stepper.observe(s);
+// The foreword lights the part being read (the one across the middle), the rest waits faintly. Beside it the book
+// stays shut on the desk and, now and then, its cover lifts a little and settles, as if it might open.
+const reading = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) for (const s of story.querySelectorAll(".slide")) s.classList.toggle("on", s === e.target);
+}, { root: story, rootMargin: "-42% 0px -48% 0px" });
+for (const s of story.querySelectorAll(".slide")) reading.observe(s);
+let stirring = false;
+setInterval(() => {
+  if (!storyOpen || !beside() || document.hidden || T || peeking || !frontClosed()) return;
+  stirring = true;
+  peekCover(true);
+  setTimeout(() => { if (stirring) { stirring = false; peekCover(false); } }, 1100);
+}, 7000);
 storyTab.onclick = () => showStory();
 storyX.onclick = () => closeStory(false);
 story.querySelector(".open").onclick = () => closeStory(true);
@@ -1103,6 +1086,7 @@ function openCover() {   // a click or a tap on the closed book: open it, from t
 const overBook = (x, y) => { const p = worldAt(x, y), [x0, x1] = span(); return p.x >= x0 && p.x <= x1 && Math.abs(p.y) <= H / 2; };
 canvas.addEventListener("pointermove", e => {
   if (e.pointerType !== "mouse" || pointers.size) return;
+  stirring = false;
   const over = !T || peeking ? frontClosed() && view.zoom <= 1.05 && overBook(e.clientX, e.clientY) : false;
   canvas.style.cursor = over ? "pointer" : "";
   peekCover(over);
