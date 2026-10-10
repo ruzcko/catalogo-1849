@@ -4,18 +4,18 @@ In 1849, many Filipinos had a baptismal name but no family name passed down, and
 
 This is a machine-read, partly hand-checked list of the names in that book.
 
-**At a glance:** 59,171 entries from all 141 name-list pages, read from three scans of the same reprint (updated 10 October 2026):
+**At a glance:** 59,099 entries from all 141 name-list pages, read from three scans of the same reprint (updated 10 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
 | `checked` (confirmed or corrected on the scans, or from a source) | 94 |
-| `sure` | 11,302 |
-| `likely` | 21,216 |
-| `best_effort` | 21,111 |
-| `low` (163 of them `?`: lines no scan could read) | 4,656 |
+| `sure` | 11,353 |
+| `likely` | 21,237 |
+| `best_effort` | 20,970 |
+| `low` (164 of them `?`: lines no scan could read) | 4,653 |
 
-Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 25,864 names; where they differ (26,863), the more likely one is kept, with a third reading, from a microfilm, to break ties, and the other readings are recorded. The book prints about 60,662 names: 163 lines are here as `?` because no scan could read them, and about 1,500 are still missing.
+Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 26,118 names; where they differ (26,652), the more likely one is kept, with a third reading, from a microfilm, to break ties, and the other readings are recorded. The book prints about 60,662 names: 164 lines are here as `?` because no scan could read them, and about 1,500 are still missing.
 
 This is the first open, searchable list of the book's names that we know of. It powers the "The book" chapter of [Apelyido](https://apelyido.ruzcko.com).
 
@@ -31,13 +31,13 @@ This is the first open, searchable list of the book's names that we know of. It 
 
 ### How the scans are combined
 
-The copies have different blemishes (one is faded where another is clear), so their OCR errors fall in different places. On each page the readings are lined up, using the names read the same to map one scan onto another, and each printed line is paired with its counterparts. Google's and Issuu's readings decide:
+The copies have different blemishes (one is faded where another is clear), so their OCR errors fall in different places. On each page the readings are lined up: the names read the same map one scan onto another, which puts every line in its column, and then each column's lines are paired in order, as a diff pairs the lines of two texts (a straight-line map alone drifted by a line in a few warped outer columns, pairing whole runs with their neighbours). Google's and Issuu's readings decide:
 
 - **Both read it the same:** trusted (`sure` or `likely`).
 - **They differ:** a surname people still carry today wins; otherwise the one the microfilm reads the same, if it does; otherwise the more confident reading. The other readings are kept in the dataset (`google_reading`, `issuu_reading`, `familysearch_reading`). If Google's and Issuu's were both confident, it's marked `best_effort`.
 - **Only one scan has the line** (a page or a line the other skips): that scan's reading. A line neither could read takes the microfilm's reading, if it has one.
 
-The microfilm only breaks ties: it never outvotes the other two, and it never makes a reading look surer than they did. Its greyscale often shows letters that the black-and-white scan merges, but its OCR has slips of its own (*aa* read as *an*, a final *u* as *a*), some the same as Google's (*t* as *l*, *a* as *s*). Given a full vote, it made more wrong readings `sure`, and allowed past a surname people carry today, it replaced real names with those shared slips. As a tie-break, the merge reads 57 of 94 hard entries checked by hand right (the two scans alone: 17).
+The microfilm only breaks ties: it never outvotes the other two, and it never makes a reading look surer than they did. Its greyscale often shows letters that the black-and-white scan merges, but its OCR has slips of its own (*aa* read as *an*, a final *u* as *a*), some the same as Google's (*t* as *l*, *a* as *s*). Given a full vote, it made more wrong readings `sure`, and allowed past a surname people carry today, it replaced real names with those shared slips. As a tie-break, the merge reads 62 of 94 hard entries checked by hand right (the two scans alone: 17).
 
 On the two hand-typed pages this reads 92% and 87% of names exactly (the two scans alone: 91% and 86%; the Issuu scan alone: 91% and 82%), and 85% of the names marked `sure` or `likely` are right (81% before).
 
@@ -53,7 +53,7 @@ The book is alphabetical on the **first three letters** of each name: on the han
 
 The order follows the book's own alphabet, the Spanish of 1849: **Ll is a letter of its own after L** (its section follows L), ñ comes after n, and accents don't count. In the Ll section the old type's "ll" often comes out of the OCR as "h", "li", "il" or "in" (*llamas* read as *hamas*); those are put back. There are no I, K, W or X sections, though a few I and K names sit among the Y and Q ones.
 
-**A check against a published count.** Todd Sales Lucero's "Ten things to know about the Catálogo" (*The Freeman*, 15 November 2023) counts 141 pages of names, six columns of 72 names (432 on a full page), about 53,517 names legible with certainty, 113 Ll names and 14 I names, and gives the first name as AACAIN and the last as ZURRAR. This transcription has 59,171 entries, 432 on its fullest pages, 97 Ll names, starts with *aacain*, and ends with *zurrar* (the OCRs read *zurrac* and *zustar*; corrected from the article).
+**A check against a published count.** Todd Sales Lucero's "Ten things to know about the Catálogo" (*The Freeman*, 15 November 2023) counts 141 pages of names, six columns of 72 names (432 on a full page), about 53,517 names legible with certainty, 113 Ll names and 14 I names, and gives the first name as AACAIN and the last as ZURRAR. This transcription has 59,099 entries, 432 on its fullest pages, 97 Ll names, starts with *aacain*, and ends with *zurrar* (the OCRs read *zurrac* and *zustar*; corrected from the article).
 
 This repository contains only the transcribed text, not the page images.
 
