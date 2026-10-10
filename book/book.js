@@ -299,14 +299,21 @@ function drawPrinted(g, side, page, data) {
   const sizes = data.e.map(e => e[3] - e[1]).sort((a, b) => a - b);
   // Even lines: the type as large as they allow. In place: the size of the printed type.
   const size = tidy && data.pitch ? Math.round(data.pitch * S * 0.9) : Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
-  const headY = tidy ? TIDY.head : 118, footY = tidy ? TIDY.foot : 1428;
-  // The reprint's thumb letter, then the running head: page number and letter, as on the scanned page.
-  g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
   g.fillStyle = INK;
-  g.fillText(page.letter, (side === "R" ? SCAN_W - 50 : 22) * S, 52 * S);
-  g.font = `${Math.round(17 * S)}px ${FONT}`;
-  g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, headY * S);
-  centred(g, page.letter, headY * S, Math.round(17 * S));
+  if (tidy) {   // one head line: the page number at the outer edge, the letter in the middle
+    g.font = `${Math.round(24 * S)}px ${FONT}`;
+    g.textAlign = side === "R" ? "right" : "left";
+    g.fillText(String(page.n), (side === "R" ? TIDY.right : TIDY.left) * S, TIDY.head * S);
+    g.textAlign = "left";
+    centred(g, page.letter, TIDY.head * S, Math.round(26 * S), FONT_SC);
+  } else {      // as on the scanned page: the reprint's thumb letter, the running head, and its page number below
+    g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
+    g.fillText(page.letter, (side === "R" ? SCAN_W - 50 : 22) * S, 52 * S);
+    g.font = `${Math.round(17 * S)}px ${FONT}`;
+    g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
+    centred(g, page.letter, 118 * S, Math.round(17 * S));
+    centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
+  }
   g.font = `${size}px ${FONT}`;
   for (const e of entries) {
     const [x0, y0, x1, y1, name, status] = e;
@@ -335,7 +342,6 @@ function drawPrinted(g, side, page, data) {
     g.fillText(name + ".", x0 * S, y1 * S - 2 * S, Math.max(x1 - x0, 40) * S * 1.12);
     g.globalAlpha = 1;
   }
-  centred(g, `[${page.n}]`, footY * S, Math.round(17 * S));
 }
 
 // Views, picked in the View panel: "tags" (the default) sets the names in even columns, each shaded by how sure the
@@ -358,9 +364,9 @@ if (pageView === "tidy") pageView = "plain";
 if (!VIEWS[pageView]) pageView = "tags";
 let tidy = pageView === "tags" || pageView === "plain";
 let sure = pageView === "tags" || pageView === "scan";   // shading by certainty
-// The typeset views use the whole page, margin to margin, with the running head and the page number pulled in to the
-// edges; the reprint packs about 72 lines a column, so a page with fewer keeps the same line spacing (the same type).
-const TIDY = { left: 46, right: SCAN_W - 46, top: 112, bottom: 1436, rows: 72, head: 90, foot: 1468 };
+// The typeset views use the whole page, margin to margin, under one head line (the page number at the outer edge, the
+// letter in the middle); the reprint packs about 72 lines a column, so a page with fewer keeps the same line spacing.
+const TIDY = { left: 46, right: SCAN_W - 46, top: 86, bottom: 1472, rows: 72, head: 62 };
 function layoutOf(data) {
   if (!tidy) return data.e;
   if (data.tidy) return data.tidy;
