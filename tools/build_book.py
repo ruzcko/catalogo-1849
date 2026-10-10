@@ -9,7 +9,7 @@ rendered (2,400 x 3,882); here they're scaled to the 910 x 1,498 frame the book 
 positions: they're laid out in six even columns. A page with no entries gets a placeholder, so the page numbers run on.
 
 Each entry: [x0, y0, x1, y1, name, status, column, row, other reading, crop]. The entry's id is
-"<page>.<column>.<row>", as in the CSV. "Other reading": for a doubtful entry, what the other scan's OCR read, if
+"<page>.<column>.<row>", as in the CSV. "Other reading": for a doubtful entry, what another scan's OCR read, if
 different. Doubtful entries (best effort and low) are numbered in page order (the last field): their scan crops sit in
 that order in the page's crop strip, made by the private Apelyido pipeline (not in this repo). Status codes:
 0 hand-typed or checked, 1 sure, 2 likely, 3 best effort, 4 low. The site can draw entries where they are (as
@@ -28,13 +28,12 @@ LAST = 141
 
 
 def other(r):
-    """For a doubtful entry, the other scan's reading when it differs from ours."""
+    """For a doubtful entry, another scan's reading when it differs from ours: the one most scans read (Google's, then
+    Issuu's, on a tie). Older CSVs have no familysearch_reading column."""
     if STATUS[r["status"]] < 3:
         return None
-    for v in (r["google_reading"], r["issuu_reading"]):
-        if v and v != r["entry"]:
-            return v
-    return None
+    readings = [v for v in (r["google_reading"], r["issuu_reading"], r.get("familysearch_reading", "")) if v and v != r["entry"]]
+    return max(readings, key=readings.count) if readings else None
 
 
 def main():

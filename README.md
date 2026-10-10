@@ -4,18 +4,18 @@ In 1849, many Filipinos had a baptismal name but no family name passed down, and
 
 This is a machine-read, partly hand-checked list of the names in that book.
 
-**At a glance:** 59,171 entries from all 141 name-list pages, read from two independent scans (updated 9 October 2026):
+**At a glance:** 59,171 entries from all 141 name-list pages, read from three scans of the same reprint (updated 10 October 2026):
 
 | Status | Entries |
 | --- | ---: |
 | `hand` / `hand_unclear` (two pages typed by a person) | 792 |
-| `checked` (corrected from a source) | 1 |
-| `sure` | 11,344 |
-| `likely` | 21,471 |
-| `best_effort` | 21,040 |
-| `low` (376 of them `?`: lines neither scan could read) | 4,523 |
+| `checked` (confirmed or corrected on the scans, or from a source) | 94 |
+| `sure` | 11,302 |
+| `likely` | 21,216 |
+| `best_effort` | 21,111 |
+| `low` (163 of them `?`: lines no scan could read) | 4,656 |
 
-Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 25,864 names; where they differ (26,863), the more likely one is kept and the other is recorded. The book prints about 60,662 names: 376 lines are here as `?` because neither scan could read them, and about 1,500 are still missing.
+Every page is covered, including the eight (62–63, 66–67, 70–71, 74–75; 3,273 names) that the Issuu scan skips. Two OCR readings agree on 25,864 names; where they differ (26,863), the more likely one is kept, with a third reading, from a microfilm, to break ties, and the other readings are recorded. The book prints about 60,662 names: 163 lines are here as `?` because no scan could read them, and about 1,500 are still missing.
 
 This is the first open, searchable list of the book's names that we know of. It powers the "The book" chapter of [Apelyido](https://apelyido.ruzcko.com).
 
@@ -23,20 +23,23 @@ This is the first open, searchable list of the book's names that we know of. It 
 
 - **The book:** *Catálogo alfabético de apellidos* (Manila, 1849). Public domain.
 - **The edition read:** the 1973 reprint by the **National Archives of the Philippines**.
-- **The scans,** two independent copies of that reprint:
+- **The scans,** three copies of that reprint:
   - **Google Books**, from the **University of Michigan** library's copy: [Catálogo alfabético de apellidos](https://books.google.com/books?id=dEMvAAAAMAAJ), digitized by Google (about 4,400 pixels wide, all 141 pages).
   - The **Filipinas Heritage Library (Ayala Foundation)**: [Catálogo alfabético de apellidos on Issuu](https://issuu.com/filipinasheritagelibrary/docs/catalogo_alfabetico_de_apellidos) (910 pixels wide, 133 pages). Thank you for preserving this book and making it accessible.
-- **Transcription:** both scans read with [Surya](https://github.com/datalab-to/surya) OCR, combined line by line, corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
+  - **FamilySearch**'s microfilm of the reprint (catalogued TN-390531, filmed 2021): greyscale, about 1,500 pixels wide, all 141 pages. Used only for its text, as a third reading; its images aren't published.
+- **Transcription:** all three scans read with [Surya](https://github.com/datalab-to/surya) OCR, combined line by line, corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
 
-### How the two scans are combined
+### How the scans are combined
 
-The two copies have different blemishes (one is faded where the other is clear), so their OCR errors fall in different places. On each page the two readings are lined up, using the names both read the same to map one scan onto the other, and each printed line is paired with its counterpart:
+The copies have different blemishes (one is faded where another is clear), so their OCR errors fall in different places. On each page the readings are lined up, using the names read the same to map one scan onto another, and each printed line is paired with its counterparts. Google's and Issuu's readings decide:
 
 - **Both read it the same:** trusted (`sure` or `likely`).
-- **They differ:** a surname people still carry today wins; otherwise the more confident reading. The other reading is kept in the dataset (`google_reading`, `issuu_reading`). If both were confident, it's marked `best_effort`.
-- **Only one scan has the line** (a page or a line the other skips): that scan's reading.
+- **They differ:** a surname people still carry today wins; otherwise the one the microfilm reads the same, if it does; otherwise the more confident reading. The other readings are kept in the dataset (`google_reading`, `issuu_reading`, `familysearch_reading`). If Google's and Issuu's were both confident, it's marked `best_effort`.
+- **Only one scan has the line** (a page or a line the other skips): that scan's reading. A line neither could read takes the microfilm's reading, if it has one.
 
-On the two hand-typed pages this reads 91% and 86% of names exactly (the Issuu scan alone: 91% and 82%), and 85% of the names marked `sure` or `likely` are right (81% before).
+The microfilm only breaks ties: it never outvotes the other two, and it never makes a reading look surer than they did. Its greyscale often shows letters that the black-and-white scan merges, but its OCR has slips of its own (*aa* read as *an*, a final *u* as *a*), some the same as Google's (*t* as *l*, *a* as *s*). Given a full vote, it made more wrong readings `sure`, and allowed past a surname people carry today, it replaced real names with those shared slips. As a tie-break, the merge reads 57 of 94 hard entries checked by hand right (the two scans alone: 17).
+
+On the two hand-typed pages this reads 92% and 87% of names exactly (the two scans alone: 91% and 86%; the Issuu scan alone: 91% and 82%), and 85% of the names marked `sure` or `likely` are right (81% before).
 
 ### How the book's order is used
 
@@ -46,7 +49,7 @@ The book is alphabetical on the **first three letters** of each name: on the han
 2. Across the whole book, we find the longest chain of entries whose first three letters never go backwards (confident readings count more). An entry off that chain, sitting between two neighbours that start the same way, gets a one-letter fix (*tnpoc* between *tap…* names becomes *tapoc*). These fixes are right about 70% of the time on the hand-typed pages, so they are marked `best_effort`.
 3. Any other out-of-order entry is trusted one step less (`sure`/`likely` become `best_effort`, `best_effort` becomes `low`). On the hand-typed pages, 24 of the 26 entries demoted this way were indeed misread.
 
-`google_reading` and `issuu_reading` always keep what each scan's OCR actually read (after cleaning).
+`google_reading`, `issuu_reading` and `familysearch_reading` always keep what each scan's OCR actually read (after cleaning).
 
 The order follows the book's own alphabet, the Spanish of 1849: **Ll is a letter of its own after L** (its section follows L), ñ comes after n, and accents don't count. In the Ll section the old type's "ll" often comes out of the OCR as "h", "li", "il" or "in" (*llamas* read as *hamas*); those are put back. There are no I, K, W or X sections, though a few I and K names sit among the Y and Q ones.
 
@@ -56,7 +59,7 @@ This repository contains only the transcribed text, not the page images.
 
 ## Read this before using it
 
-**This is a machine-read version.** Both copies have faded, smudged and cracked stretches (some printed into the 1973 reprint itself). Measured against two pages typed by hand, it reads 86–91% of names exactly and 97–99% within one letter. Every row says how much to trust it (see `status`), and corrections are very welcome: readers can vote on doubtful names in the [virtual book](https://catalogo-1849.ruzcko.com).
+**This is a machine-read version.** The copies have faded, smudged and cracked stretches (some printed into the 1973 reprint itself, so every copy has them). Measured against two pages typed by hand, it reads 86–91% of names exactly and 97–99% within one letter. Every row says how much to trust it (see `status`), and corrections are very welcome: readers can vote on doubtful names in the [virtual book](https://catalogo-1849.ruzcko.com).
 
 ## Files
 
@@ -70,7 +73,7 @@ This repository contains only the transcribed text, not the page images.
 | `entry` | The name as read (by OCR, or by a person on the hand-typed pages), lowercase, as printed (accents kept) |
 | `status` | How much to trust it (below) |
 | `confidence` | The OCR's confidence in the line, 0–1 (empty on hand-typed pages) |
-| `google_reading`, `issuu_reading` | What each scan's OCR read for this line (empty where that scan has no line here) |
+| `google_reading`, `issuu_reading`, `familysearch_reading` | What each scan's OCR read for this line (empty where that scan has no line here) |
 | `x0`, `y0`, `x1`, `y1` | The entry's box on Google's scan of the page, in pixels of the page drawn 2,400 × 3,882 |
 
 | `status` | Meaning |
@@ -78,10 +81,10 @@ This repository contains only the transcribed text, not the page images.
 | `hand` | Typed by a person from the scan |
 | `hand_unclear` | Typed by a person; `?` marks letters they couldn't read |
 | `checked` | An OCR reading confirmed or corrected by a person |
-| `sure` | Both scans agree, or confident OCR (≥ 0.8), **and** a surname people still carry in the Philippines today (in local-election candidate lists or the 2023 barangay officials) |
-| `likely` | Both scans agree, or confident OCR (≥ 0.8), but not a surname found today (often an old native name) |
-| `best_effort` | Less confident OCR (0.6–0.8), the two scans confidently disagree, a one-letter fix from the book's order, or a confident reading that breaks the order: probably right, check before relying on it |
-| `low` | Low-confidence OCR (< 0.6), or a less confident one that breaks the order: often wrong. `?` is a line neither scan could read |
+| `sure` | Google's and Issuu's scans agree, or confident OCR (≥ 0.8), **and** a surname people still carry in the Philippines today (in local-election candidate lists or the 2023 barangay officials) |
+| `likely` | Google's and Issuu's scans agree, or confident OCR (≥ 0.8), but not a surname found today (often an old native name) |
+| `best_effort` | Less confident OCR (0.6–0.8), Google's and Issuu's scans confidently disagree, a one-letter fix from the book's order, or a confident reading that breaks the order: probably right, check before relying on it |
+| `low` | Low-confidence OCR (< 0.6), or a less confident one that breaks the order: often wrong. `?` is a line no scan could read |
 
 For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
@@ -102,7 +105,7 @@ For most uses, keep `hand`, `checked`, `sure` and `likely`.
 
 Links: `/58` opens page 58; `/fabella` finds a name and marks it; `/58/glubig` opens one entry's reading help (`/58/glubig-2` for a second one on the page). The older `#p=`, `#n=` and `#e=` links still work. When `book.js`, `style.css` or `book/data` change, bump the `?v=` in `index.html`: the book fetches its data with the same version, so no browser mixes a new release with page files kept from the last one. Shared links get their own preview card (`functions/[[path]].js` sets the tags, `functions/og.js` draws the card in IM Fell with resvg; no scan images).
 
-**Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (Google's scan of the University of Michigan copy, one line at a time, served by Apelyido rather than kept in this repo), the OCR reading and the other scan's OCR, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`. The database's tables are in `schema.sql`. Votes are kept by entry position (page, column, row), so a re-layout that moves entries needs the votes remapped first.
+**Reading help.** *How sure?* shows each reading's status (faint: best guess; orange: blurry). Tapping a doubtful entry shows its scan crop (Google's scan of the University of Michigan copy, one line at a time, served by Apelyido rather than kept in this repo), the OCR reading and another scan's OCR, where it falls in the book's order, and readers' readings. Readers vote for a reading or type their own; tallies show after voting. The server (`functions/api`, `lib/readings.js`, a Cloudflare D1 database) checks every reading against the book: the page's letter, the order of the first three letters, 2-20 letters, only the book's characters, close to what's printed. Votes keep only the reading and a hash of a random code made up by the browser. Readings that readers agree on are checked by hand before they change `catalogo_1849.csv`. The database's tables are in `schema.sql`. Votes are kept by entry position (page, column, row), so a re-layout that moves entries needs the votes remapped first.
 
 ### Reviewing reader votes
 
