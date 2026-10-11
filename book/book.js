@@ -82,12 +82,30 @@ const paperEdge = shaded(0xd8c9a8, [0.84, 0.84, 0.7, 0.93, 1, 0.6]);
 const stackL = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
 const stackR = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
 scene.add(stackL, stackR);
-// The hard covers' boards, under the pages and a little larger, in the cover's leather.
-const BOARD = 0.014, OVER = 0.02;
-const boardMat = shaded(0x5a1d16, [0.7, 0.7, 0.6, 0.85, 1, 0.5]);
-const boardL = new THREE.Mesh(new THREE.BoxGeometry(W + OVER, H + 2 * OVER, BOARD), boardMat);
-const boardR = new THREE.Mesh(new THREE.BoxGeometry(W + OVER, H + 2 * OVER, BOARD), boardMat);
-scene.add(boardL, boardR);
+// The hard covers: two boards, a little larger than the pages, hinged at the spine (x = 0), each with the cover
+// outside, the endpaper inside and leather edges. The front board lies on the pages while the book is closed and
+// turns over to the left to open it; the back board lies under the pages and turns over them to close the book at
+// the end. While the book is closed, a rounded leather spine joins the two along the hinge.
+const BOARD = 0.014, OVER = 0.02, BW = W + OVER, BH = H + 2 * OVER;
+const leather = shaded(0x5a1d16, [0.7, 0.7, 0.6, 0.85, 1, 0.5]);
+function makeCover(rises) {   // rises: the board sits on its hinge (the front), else hangs from it (the back)
+  const geo = new THREE.BoxGeometry(BW, BH, BOARD);
+  geo.translate(BW / 2, 0, rises ? BOARD / 2 : -BOARD / 2);
+  const mesh = new THREE.Mesh(geo, [...leather.slice(0, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), new THREE.MeshBasicMaterial({ color: 0xffffff })]);
+  scene.add(mesh);
+  return mesh;
+}
+const coverF = makeCover(true), coverB = makeCover(false);
+const spineGeo = new THREE.CylinderGeometry(1, 1, BH, 24, 1, true, Math.PI, Math.PI);   // half a tube along y, bulging to -x
+{ // unlit, so shade it by hand: lighter where it faces up, darker round to the desk
+  const pos = spineGeo.attributes.position, col = [], base = new THREE.Color(0x5a1d16);
+  for (let i = 0; i < pos.count; i++) { const c = base.clone().multiplyScalar(0.55 + 0.4 * (0.5 + 0.5 * pos.getZ(i))); col.push(c.r, c.g, c.b); }
+  spineGeo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+}
+const spine = new THREE.Mesh(spineGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+scene.add(spine);
+const NONE = -3;                                 // no page here (a cover lies there instead)
+const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
 const pageMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff });
 const leftPage = new THREE.Mesh(new THREE.PlaneGeometry(W, H), pageMat());
@@ -97,39 +115,58 @@ rightPage.geometry.translate(W / 2, 0, 0);
 scene.add(leftPage, rightPage);
 
 // The leaf being turned: a finely divided sheet, bent on the graphics card. It turns about the spine (x = 0), from
-// angle 0 (lying on the right) to π (lying on the left). Along the sheet the angle changes by k per unit, so it bows
-// like paper (a circular arc, in closed form), and "twist" makes one corner lead, as when it's grabbed high or low.
-// Its shade comes from how the surface faces the reader: darker as it turns away, a faint sheen along the crest.
+// angle 0 (lying on the right) to π (lying on the left), and it curls as paper does: the sheet rolls round a line
+// across it (the curl), flat on either side of the roll. The line leans with where the page was grabbed, so a corner
+// peels up first; early in a turn the roll is out by the free edge and the edge leads, and as the page comes over the
+// whole sheet bows and the edge trails as it lands. In the sheet's own frame: the part before the curl lies flat,
+// the roll (from uC, uL long) turns it by uDelta, the rest goes on straight; then the whole sheet turns by uThetaS
+// about the spine. Its shade comes from how the surface faces the reader, with a sheen along the roll.
 const LEAF_VS = `
-uniform float uTheta, uK, uTwist, uHalfH, uW;
+uniform float uThetaS, uDelta, uC, uL, uAlpha;
 varying vec2 vUv;
-varying float vNz;
+varying float vNz, vRoll;
 void main() {
   vUv = uv;
-  float u = position.x, v = position.y;
-  float k = uK + uTwist * (v / uHalfH) / uW;
-  float a = uTheta + k * u;
-  vec3 p = abs(k) < 1e-4 ? vec3(u * cos(uTheta), v, u * sin(uTheta))
-                         : vec3((sin(a) - sin(uTheta)) / k, v, (cos(uTheta) - cos(a)) / k);
-  vNz = cos(a);
+  vec2 n = vec2(cos(uAlpha), -sin(uAlpha)), along = vec2(sin(uAlpha), cos(uAlpha));
+  float s = dot(position.xy, n), w = dot(position.xy, along);
+  float X = s, Z = 0.0, phi = 0.0;
+  vRoll = 0.0;
+  if (abs(uDelta) > 1e-4 && s > uC) {
+    float R = uL / uDelta;
+    if (s < uC + uL) {
+      phi = uDelta * (s - uC) / uL;
+      X = uC + R * sin(phi);
+      Z = R * (1.0 - cos(phi));
+      vRoll = sin(3.14159265 * (s - uC) / uL);
+    } else {
+      float r = s - uC - uL;
+      phi = uDelta;
+      X = uC + R * sin(uDelta) + r * cos(uDelta);
+      Z = R * (1.0 - cos(uDelta)) + r * sin(uDelta);
+    }
+  }
+  vec2 q = X * n + w * along;
+  float c = cos(uThetaS), sn = sin(uThetaS);
+  vec3 p = vec3(q.x * c - Z * sn, q.y, q.x * sn + Z * c);
+  vNz = cos(phi) * c - sin(phi) * n.x * sn;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 const LEAF_FS = `
 uniform sampler2D map;
 uniform float uBack;
 varying vec2 vUv;
-varying float vNz;
+varying float vNz, vRoll;
 void main() {
   vec2 uv = uBack > 0.5 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
   float facing = uBack > 0.5 ? -vNz : vNz;
-  float shade = 0.66 + 0.34 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0);
+  float shade = 0.64 + 0.36 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0) + 0.05 * vRoll * clamp(facing, 0.0, 1.0);
   gl_FragColor = vec4(texture2D(map, uv).rgb * shade, 1.0);
   #include <colorspace_fragment>
 }`;
-const SEG_X = 72, SEG_Y = 24;
+const SEG_X = 72, SEG_Y = 48;   // fine both ways: the curl's line can lean
 const leafGeo = new THREE.PlaneGeometry(W, H, SEG_X, SEG_Y);
 leafGeo.translate(W / 2, 0, 0);
-const bend = { uTheta: { value: 0 }, uK: { value: 0 }, uTwist: { value: 0 }, uHalfH: { value: H / 2 }, uW: { value: W } };
+const bend = { uThetaS: { value: 0 }, uDelta: { value: 0 }, uC: { value: 0 }, uL: { value: W }, uAlpha: { value: 0 } };
 const leafMat = back => new THREE.ShaderMaterial({ vertexShader: LEAF_VS, fragmentShader: LEAF_FS,
   side: back ? THREE.BackSide : THREE.FrontSide, uniforms: { ...bend, map: { value: null }, uBack: { value: back ? 1 : 0 } } });
 const leafFront = new THREE.Mesh(leafGeo, leafMat(false));
@@ -146,22 +183,41 @@ const castShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, H),
 castShadow.visible = false;
 scene.add(castShadow);
 
-// Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back; the free edge
-// lags behind the spine. twist: -1..1, which corner leads (where it was grabbed).
+// Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back. twist: -1..1,
+// where it was grabbed, high or low, for the way it turns (dir); the corner nearer the grab peels first.
 function poseLeaf(t, dir, twist = 0) {
-  const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't bow
-  const lift = Math.sin(Math.PI * t), theta = Math.PI * t, k = rigid ? 0 : -dir * 0.9 * lift / W;
-  bend.uTheta.value = theta;
-  bend.uK.value = k;
-  bend.uTwist.value = rigid ? 0 : 0.35 * twist * lift;
+  const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't curl
+  const p = dir > 0 ? t : 1 - t, lift = Math.sin(Math.PI * p);   // how far through the turn, in its own direction
+  // The spine's angle and the free edge's, for a forward turn: the edge leads at first, then trails as it lands.
+  const mean = Math.PI * p, lead = rigid ? 0 : 2.2 * lift * (1 - 1.5 * p);
+  const s0 = Math.min(Math.PI, Math.max(0, mean - lead / 2)), e0 = Math.min(Math.PI, Math.max(0, mean + lead / 2));
+  const k = smooth(0, 0.45, p);                   // the roll starts out by the edge, and spreads to the whole sheet
+  bend.uThetaS.value = dir > 0 ? s0 : Math.PI - s0;
+  bend.uDelta.value = (dir > 0 ? 1 : -1) * (e0 - s0);
+  bend.uC.value = 0.5 * W * (1 - k);
+  bend.uL.value = W * (0.4 + 0.6 * k);
+  // The lean is for the peel; it straightens as the page comes down, so it lands square on the stack.
+  bend.uAlpha.value = rigid ? 0 : -0.5 * twist * (dir > 0 ? 1 : -1) * (1 - smooth(0.55, 0.9, p));
   // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
-  const edge = Math.abs(k) < 1e-6 ? W * Math.cos(theta) : (Math.sin(theta + k * W) - Math.sin(theta)) / k;
+  const edge = curlX(W);
   const width = 0.5 * W * lift + 0.02;
   const onRight = edge >= 0;
   castShadow.visible = lift > 0.01;
   castShadow.scale.x = onRight ? width : -width;
   castShadow.position.x = onRight ? Math.min(edge, W) + width / 2 : Math.max(edge, -W) - width / 2;
   castShadow.material.opacity = 0.5 * lift;
+}
+// Where a point of the sheet's middle line (u from the spine) is, across the book, as the shader puts it.
+function curlX(u) {
+  const { uThetaS: { value: ts }, uDelta: { value: d }, uC: { value: c }, uL: { value: l }, uAlpha: { value: al } } = bend;
+  const s = u * Math.cos(al);
+  let X = s, Z = 0;
+  if (Math.abs(d) > 1e-4 && s > c) {
+    const R = l / d;
+    if (s < c + l) { const phi = d * (s - c) / l; X = c + R * Math.sin(phi); Z = R * (1 - Math.cos(phi)); }
+    else { const r = s - c - l; X = c + R * Math.sin(d) + r * Math.cos(d); Z = R * (1 - Math.cos(d)) + r * Math.sin(d); }
+  }
+  return (X * Math.cos(al) + u * Math.sin(al) ** 2) * Math.cos(ts) - Z * Math.sin(ts);
 }
 
 // ---------- Drawing pages ----------
@@ -216,6 +272,25 @@ function centred(g, text, y, size, font = FONT, color = INK) {
   g.textAlign = "left";
 }
 
+// A board's inside: the pasted-down endpaper, with the leather turned in round its three outer edges.
+function endpaper(g, side) {
+  g.fillStyle = "#5a1d16";
+  g.fillRect(0, 0, TEX_W, TEX_H);
+  g.fillStyle = g.createPattern(noise ||= makeNoise(), "repeat");
+  for (let i = 0; i < 3; i++) g.fillRect(0, 0, TEX_W, TEX_H);
+  const mx = Math.round(2.2 * OVER / (W + OVER) * TEX_W), my = Math.round(2.2 * OVER / (H + 2 * OVER) * TEX_H);
+  const x0 = side === "R" ? 0 : mx, w = TEX_W - mx;
+  g.save();
+  g.beginPath();
+  g.rect(x0, my, w, TEX_H - 2 * my);
+  g.clip();
+  paper(g, side, "#d9c9a6");
+  g.restore();
+  g.strokeStyle = "rgba(40, 20, 10, .35)";   // the paper's edge on the leather
+  g.lineWidth = 3;
+  g.strokeRect(x0, my, w, TEX_H - 2 * my);
+}
+
 function drawCover(g, back) {
   g.fillStyle = "#5a1d16";
   g.fillRect(0, 0, TEX_W, TEX_H);
@@ -260,15 +335,23 @@ function drawPrinted(g, side, page, data) {
   paper(g, side);
   const entries = layoutOf(data);
   const sizes = data.e.map(e => e[3] - e[1]).sort((a, b) => a - b);
-  let size = Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
-  if (tidy && data.pitch) size = Math.min(size, Math.round(data.pitch * S * 0.86));   // even lines: fit the type to them
-  // The reprint's thumb letter, then the running head: page number and letter, as on the scanned page.
-  g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
+  // Even lines: the type as large as they allow. In place: the size of the printed type.
+  const size = tidy && data.pitch ? Math.round(data.pitch * S * 0.9) : Math.round((sizes[sizes.length >> 1] || 14) * S * 1.08);
   g.fillStyle = INK;
-  g.fillText(page.letter, (side === "R" ? SCAN_W - 50 : 22) * S, 52 * S);
-  g.font = `${Math.round(17 * S)}px ${FONT}`;
-  g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
-  centred(g, page.letter, 118 * S, Math.round(17 * S));
+  if (tidy) {   // one head line: the page number at the outer edge, the letter in the middle
+    g.font = `${Math.round(24 * S)}px ${FONT}`;
+    g.textAlign = side === "R" ? "right" : "left";
+    g.fillText(String(page.n), (side === "R" ? TIDY.right : TIDY.left) * S, TIDY.head * S);
+    g.textAlign = "left";
+    centred(g, page.letter, TIDY.head * S, Math.round(26 * S), FONT_SC);
+  } else {      // as on the scanned page: the reprint's thumb letter, the running head, and its page number below
+    g.font = `bold ${Math.round(34 * S)}px Georgia, serif`;
+    g.fillText(page.letter, (side === "R" ? SCAN_W - 50 : 22) * S, 52 * S);
+    g.font = `${Math.round(17 * S)}px ${FONT}`;
+    g.fillText(String(page.n), (side === "R" ? 790 : 62) * S, 118 * S);
+    centred(g, page.letter, 118 * S, Math.round(17 * S));
+    centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
+  }
   g.font = `${size}px ${FONT}`;
   for (const e of entries) {
     const [x0, y0, x1, y1, name, status] = e;
@@ -297,7 +380,6 @@ function drawPrinted(g, side, page, data) {
     g.fillText(name + ".", x0 * S, y1 * S - 2 * S, Math.max(x1 - x0, 40) * S * 1.12);
     g.globalAlpha = 1;
   }
-  centred(g, `[${page.n}]`, 1428 * S, Math.round(17 * S));
 }
 
 // Views, picked in the View panel: "tags" (the default) sets the names in even columns, each shaded by how sure the
@@ -320,18 +402,19 @@ if (pageView === "tidy") pageView = "plain";
 if (!VIEWS[pageView]) pageView = "tags";
 let tidy = pageView === "tags" || pageView === "plain";
 let sure = pageView === "tags" || pageView === "scan";   // shading by certainty
+// The typeset views use the whole page, margin to margin, under one head line (the page number at the outer edge, the
+// letter in the middle); the reprint packs about 72 lines a column, so a page with fewer keeps the same line spacing.
+const TIDY = { left: 46, right: SCAN_W - 46, top: 86, bottom: 1472, rows: 72, head: 62 };
 function layoutOf(data) {
   if (!tidy) return data.e;
   if (data.tidy) return data.tidy;
   const e = data.e, median = a => a.sort((x, y) => x - y)[a.length >> 1];
   const cols = Math.max(...e.map(x => x[6] || 1));
-  const left = Math.min(...e.map(x => x[0])), right = Math.max(...e.map(x => x[2]));
   const top = Math.min(...e.map(x => x[1]));
-  const h = median(e.map(x => x[3] - x[1])) || 14;
   // Line pitch: the usual step between one line and the next in a column.
   const steps = [];
   for (let i = 1; i < e.length; i++) if (e[i][6] === e[i - 1][6]) { const d = e[i][1] - e[i - 1][1]; if (d > 8 && d < 30) steps.push(d); }
-  let pitch = steps.length ? median(steps) : 16.5;
+  const pitch = steps.length ? median(steps) : 16.5;
   // The scan is slightly tilted, so each column counts lines from its own first line (when that line is near the
   // top; a column whose first lines the OCR missed counts from the page's top instead).
   const colTop = {};
@@ -346,12 +429,11 @@ function layoutOf(data) {
     slotted.push([x, slot]);
   }
   const last = Math.max(...slotted.map(([, sl]) => sl));
-  if (top + (last + 1) * pitch > 1415) pitch = (1415 - top) / (last + 1);   // keep clear of the page number
-  const colW = (right - left) / cols;
-  data.pitch = pitch;
+  const lines = (TIDY.bottom - TIDY.top) / Math.max(last + 1, TIDY.rows), colW = (TIDY.right - TIDY.left) / cols;
+  data.pitch = lines;
   data.tidy = slotted.map(([x, slot]) => {
-    const x0 = left + ((x[6] || 1) - 1) * colW, y0 = top + slot * pitch;
-    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.92), Math.round(y0 + h), ...x.slice(4)];   // name, status, column, row, other reading, crop
+    const x0 = TIDY.left + ((x[6] || 1) - 1) * colW, y0 = TIDY.top + slot * lines;
+    return [Math.round(x0), Math.round(y0), Math.round(x0 + colW * 0.94), Math.round(y0 + lines * 0.8), ...x.slice(4)];   // name, status, column, row, other reading, crop
   });
   return data.tidy;
 }
@@ -426,7 +508,7 @@ function drawFace(f, c, side) {
   const g = c.getContext("2d"), kind = f === BLANK ? null : FACES[f];
   if (kind === "cover") drawCover(g, false);
   else if (kind === "backcover") drawCover(g, true);
-  else if (kind === "endpaper") paper(g, side, "#d9c9a6");
+  else if (kind === "endpaper") endpaper(g, side);
   else if (kind === "title") drawText(g, side, [
     ["CATÁLOGO", 88, FONT_SC, 110], ["ALFABÉTICO", 72, FONT_SC, 96], ["DE APELLIDOS", 72, FONT_SC, 190],
     ["Manila, 1849", 40, `italic ${FONT}`, 520], ["Recreated from an open transcription", 30, FONT, 46],
@@ -549,7 +631,7 @@ function texture(f, side) {
   const i = order.indexOf(key);
   if (i >= 0) order.splice(i, 1);
   order.push(key);
-  while (order.length > 12) {                     // keep a dozen pages in memory
+  while (order.length > 16) {                     // keep a dozen pages in memory, and the covers' four faces
     const old = order.shift();
     canvases.delete(old);
     textures.get(old)?.dispose();
@@ -597,10 +679,48 @@ function setMode(m) {
   return true;
 }
 
+// The paper on each side: the leaves between the two covers (the covers are boards, posed apart).
+function paper2() {
+  if (mode === "single") return [0, Math.max(0, SINGLE.length - si - 1)];
+  return [Math.max(0, Math.min(cur, LEAVES - 1) - 1), Math.max(0, LEAVES - 1 - Math.max(cur, 1))];
+}
+// The covers and the spine as they lie when no cover is turning (turn: a cover's turn in progress, posed by its t).
+function poseCovers(turn) {
+  const single = mode === "single", [left, right] = paper2(), zL = left * LEAF, zR = right * LEAF, desk = -LEAF;
+  let tf = (single ? si : cur) === 0 ? 0 : 1, tb = !single && cur === LEAVES ? 1 : 0;
+  if (turn && turn.cover === "F") tf = turn.t;
+  if (turn && turn.cover === "B") tb = turn.t;
+  if (turn && single && turn.rigid && (turn.dir > 0 ? si === 0 : si === 1)) tf = turn.t;   // the cover, as a page
+  // The front board's hinge stays on the pages while the board is over them, and comes down to the desk once it's
+  // past upright; the back board's hinge rises onto the pages before the board is over them. So neither cuts in.
+  const pf = zR + (desk - zR) * smooth(0.5, 1, tf), pb = desk + (zL - desk) * smooth(0, 0.5, tb);
+  coverF.visible = !single;
+  coverF.position.set(0, 0, pf);
+  coverF.rotation.y = -Math.PI * tf;
+  coverB.position.set(0, 0, pb);
+  coverB.rotation.y = -Math.PI * tb;
+  setFace(coverF.material[4], 0, "R"); setFace(coverF.material[5], 1, "L");
+  setFace(coverB.material[4], FACES.length - 2, "R"); setFace(coverB.material[5], FACES.length - 1, "L");
+  // The spine, from under the back board to the top of the one on top. It bulges out on the side away from the
+  // pages, which is where the turning board goes: so it folds flat as the front board comes up to upright, and
+  // rounds out only once the back board is past upright.
+  const back = !single && tb > 0, round = back ? smooth(0.5, 0.65, tb) : 1 - smooth(0.35, 0.5, tf);
+  spine.visible = round > 0.01;
+  if (spine.visible) {
+    const bottom = desk - BOARD, top = back ? pb + BOARD : single ? zR : pf + BOARD, half = Math.max(1e-4, (top - bottom) / 2);
+    spine.position.set(0, 0, (top + bottom) / 2);
+    spine.scale.set((back ? -1 : 1) * Math.max(0.003, 0.62 * half * round), 1, half);
+  }
+}
+function setFace(mat, f, side) {
+  const tex = texture(f, side);
+  if (mat.map !== tex) { mat.map = tex; mat.needsUpdate = true; }
+}
+const pageOr = f => (f === 1 || f === FACES.length - 2 ? NONE : f);   // the endpapers are the covers' insides
+
 function place() {
-  const left = mode === "single" ? 0 : cur, right = mode === "single" ? SINGLE.length - si : LEAVES - cur;
-  const leftZ = left * LEAF, rightZ = right * LEAF;
-  stackL.visible = mode === "spread" && cur > 0;
+  const [left, right] = paper2(), leftZ = left * LEAF, rightZ = right * LEAF;
+  stackL.visible = mode === "spread" && left > 0;
   stackR.visible = right > 0;
   stackL.scale.z = Math.max(leftZ, 1e-4); stackL.position.set(-W / 2, 0, leftZ / 2 - LEAF);
   stackR.scale.z = Math.max(rightZ, 1e-4); stackR.position.set(W / 2, 0, rightZ / 2 - LEAF);
@@ -610,13 +730,11 @@ function place() {
   const alone = mode === "single" || cur === 0 || cur === LEAVES;
   shadow.scale.x = alone ? 0.55 : 1;
   shadow.position.x = mode === "single" || cur === 0 ? W / 2 : cur === LEAVES ? -W / 2 : 0;
-  boardR.visible = mode === "single" || cur < LEAVES;
-  boardL.visible = mode === "spread" && cur > 0;
-  boardR.position.set((W + OVER) / 2, 0, -LEAF - BOARD / 2);
-  boardL.position.set(-(W + OVER) / 2, 0, -LEAF - BOARD / 2);
+  poseCovers(null);
   // Closed, the book is seen at an angle, lying on the desk; open, from straight above, to read.
   const tt = closedBook() ? 1 : 0;
   if (tt !== view.tt) { view.tt = tt; ease(); }
+  document.body.classList.toggle("shut", closedBook());
 }
 const closedBook = () => (mode === "single" ? si === 0 || si === SINGLE.length - 1 : cur === 0 || cur === LEAVES);
 
@@ -625,8 +743,10 @@ function show() {
     leftPage.visible = false;
     setMap(rightPage, SINGLE[si], "R");
   } else {
-    setMap(leftPage, 2 * cur - 1, "L");
-    setMap(rightPage, 2 * cur, "R");
+    // Closed on the front, the page under the cover; closed on the back, the last page under it; the endpapers are
+    // the covers' own insides.
+    setMap(leftPage, cur === LEAVES ? FACES.length - 3 : cur >= 2 ? pageOr(2 * cur - 1) : NONE, "L");
+    setMap(rightPage, cur === 0 ? 2 : pageOr(2 * cur), "R");
   }
   place();
   prefetch();
@@ -647,7 +767,7 @@ function prefetch() {
 }
 
 // Start turning one leaf (dir +1 forward, -1 back): set up what's on the leaf and what's revealed beneath it.
-function startTurn(dir) {
+function startTurn(dir, peek = false) {
   if (mode === "single") {
     if (dir > 0 ? si >= SINGLE.length - 1 : si <= 0) return null;
     setMap(leafFront, dir > 0 ? SINGLE[si] : SINGLE[si - 1], "R");
@@ -656,28 +776,36 @@ function startTurn(dir) {
   } else {
     if (dir > 0 ? cur >= LEAVES : cur <= 0) return null;
     const l = dir > 0 ? cur : cur - 1;              // the leaf that moves
-    setMap(leafFront, 2 * l, "R");
-    setMap(leafBack, 2 * l + 1, "L");
-    if (dir > 0) setMap(rightPage, 2 * cur + 2, "R"); else setMap(leftPage, 2 * cur - 3, "L");
+    if (l !== 0 && l !== LEAVES - 1) {             // a paper leaf (a cover turns as its board, posed in drawTurn)
+      setMap(leafFront, 2 * l, "R");
+      setMap(leafBack, 2 * l + 1, "L");
+      if (dir > 0) setMap(rightPage, pageOr(2 * cur + 2), "R"); else setMap(leftPage, cur - 1 >= 2 ? pageOr(2 * cur - 3) : NONE, "L");
+    }
   }
   leaf.visible = true;
   const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
-  T = { dir, t: dir > 0 ? 0 : 1, twist: 0, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
-  if (closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
-  // Closing a cover: it is the only leaf on its side, so that side's stack and board go with it, not stay behind.
-  if (T.rigid && mode === "spread") {
-    if (dir < 0 && cur === 1) { stackL.visible = boardL.visible = false; shadow.scale.x = 0.55; shadow.position.x = W / 2; }
-    if (dir > 0 && cur === LEAVES - 1) { stackR.visible = boardR.visible = false; shadow.scale.x = 0.55; shadow.position.x = -W / 2; }
-  }
+  T = { dir, t: dir > 0 ? 0 : 1, twist: -0.4 * dir, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
+  if (mode === "spread" && T.rigid) { T.cover = moving === 0 ? "F" : "B"; leaf.visible = false; }
+  if (!peek && closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
+  // Closing a cover: the shadow under the book comes in to the closed book's size with it.
+  if (T.cover === "F" && dir < 0) { shadow.scale.x = 0.55; shadow.position.x = W / 2; }
+  if (T.cover === "B" && dir > 0) { shadow.scale.x = 0.55; shadow.position.x = -W / 2; }
   drawTurn();
   return T;
 }
 
 function drawTurn() {
-  poseLeaf(T.t, T.dir, T.twist);
-  const right = mode === "single" ? SINGLE.length - si : LEAVES - cur, left = mode === "single" ? 0 : cur;
-  const zR = right * LEAF, zL = left * LEAF;
-  leaf.position.z = zR + (zL - zR) * T.t + 0.003;
+  poseLeaf(T.t, T.dir, T.twist);                   // the leaf's bend, and the shadow it casts on the page below
+  poseCovers(T);
+  if (T.cover) {
+    leaf.visible = false;
+    if (T.cover === "F" ? castShadow.position.x < 0 : castShadow.position.x > 0) castShadow.visible = false;   // no pages there
+    render();
+    return;
+  }
+  const [left, right] = paper2(), zR = right * LEAF, zL = left * LEAF;
+  // The hinge rides on the taller stack while the leaf is over it, so the sheet never cuts into the pages.
+  leaf.position.z = zR + (zL - zR) * (zR >= zL ? smooth(0.5, 0.85, T.t) : smooth(0.15, 0.5, T.t)) + 0.003;
   leaf.scale.z = T.rigid ? 1 : mode === "single" ? 0.55 : 0.8;   // a flatter lift: the page turns low over the book, as a real one does
   render();
 }
@@ -697,7 +825,7 @@ function stepTurn() {
   T.t = a.from + (a.goal - a.from) * e;
   T.twist *= a.fromDrag ? 0.94 : 1;
   drawTurn();
-  if (k < 1) requestAnimationFrame(stepTurn); else endTurn();
+  if (k < 1) requestAnimationFrame(stepTurn); else if (!T.hold) endTurn();
 }
 function endTurn() {
   if (!T) return;
@@ -718,7 +846,9 @@ function turn(dir) {
 }
 
 // ---------- Camera: fit, zoom and pan ----------
-const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0 };   // x, y, zoom, tilt: now; tx, ty, tz, tt: where the camera eases to
+const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0, side: 0, ts: 0 };   // x, y, zoom, tilt, side: now; tx, ty, tz, tt, ts: where the camera eases to
+// side: the width (px) of the history panel beside the book, which the book's view leaves free on the left.
+const freeW = () => (innerWidth - view.side) / innerWidth;
 const narrow = () => mode === "single";
 const TOP = () => document.querySelector(".bar.top").offsetHeight, BOT = () => document.querySelector(".bar.bottom").offsetHeight;
 
@@ -740,10 +870,10 @@ function frame() {
 
 function fitDistance() {
   const [x0, x1] = span();
-  const vw = (x1 - x0) * (mode === "single" ? 1.04 : 1.06), vh = H * 1.04;
+  const vw = (x1 - x0) * 1.03, vh = H * 1.035;
   const usable = (innerHeight - TOP() - BOT()) / innerHeight;
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect));
+  return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect * freeW()));
 }
 
 function applyCamera() {
@@ -753,7 +883,8 @@ function applyCamera() {
   // Keep the bars from covering the page: shift the view by half the difference between the two bars.
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt);
-  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x, y = view.y - shift;
+  // And move it over by half the panel's width, so the book sits in the middle of the space the panel leaves.
+  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x - (view.side / innerWidth) * d * tan * camera.aspect, y = view.y - shift;
   camera.position.set(x + d * Math.sin(pitch) * Math.sin(yaw), y - d * Math.sin(pitch) * Math.cos(yaw), d * Math.cos(pitch));
   camera.up.set(-Math.sin(yaw), Math.cos(yaw), 0);
   camera.lookAt(x, y, 0);
@@ -770,9 +901,10 @@ function ease() {
     view.y += (view.ty - view.y) * k;
     view.zoom += (view.tz - view.zoom) * k;
     view.tilt += (view.tt - view.tilt) * (reduceMotion ? 1 : 0.07);   // the swing from desk to page is slower
+    view.side += (view.ts - view.side) * (reduceMotion ? 1 : 0.14);
     render();
-    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) > 1e-4) requestAnimationFrame(step);
-    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; easing = false; render(); }
+    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) + Math.abs(view.ts - view.side) / 1000 > 1e-4) requestAnimationFrame(step);
+    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; view.side = view.ts; easing = false; render(); }
   };
   step();
 }
@@ -781,7 +913,7 @@ function clampView() {
   // Keep the view on the pages in view.
   const [x0, x1] = span();
   const d = fitDistance() / view.zoom, tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const halfW = d * tan * camera.aspect, halfH = d * tan * (innerHeight - TOP() - BOT()) / innerHeight;
+  const halfW = d * tan * camera.aspect * freeW(), halfH = d * tan * (innerHeight - TOP() - BOT()) / innerHeight;
   const fit = (v, a, b, half) => (b - a <= 2 * half ? (a + b) / 2 : Math.max(a + half, Math.min(b - half, v)));
   view.tx = fit(view.tx, x0, x1, halfW);
   view.ty = fit(view.ty, -H / 2, H / 2, halfH);
@@ -868,38 +1000,111 @@ function updateBar() {
   if (!dlg.open) setPath(n ? `/${n}` : "/");
 }
 
-// ---------- The story before the book, then the book opening ----------
-// First visit: a few screens of history (index.html), then the closed book on the desk opens. Later visits: the
-// book opens straight away. A link to a page, a name or an entry skips both.
-const story = document.getElementById("story");
+// ---------- The history, at the side, and the book opening ----------
+// The history is optional: a panel at the side (index.html), opened from the tab on the left edge or from the ? panel.
+// On a wide screen it opens beside the closed book on a first visit, and the book moves over to make room; on a narrow
+// one it lies over the book, so it waits for the tab. A link to a page, a name or an entry goes straight there.
+const story = document.getElementById("story"), storyTab = document.getElementById("storytab"), storyX = document.getElementById("storyx");
 let storyOpen = false;
-function showStory() {
-  storyOpen = true;
-  story.hidden = false;
-  story.classList.remove("closing");
-  story.scrollTop = 0;
+const beside = () => innerWidth >= 760;                       // the panel sits beside the book, not over it
+const storyCovers = () => storyOpen && !beside();             // the panel is over the book: the book waits
+function placeStory() {   // between the bars; on a wide screen the book's view makes room for it
+  story.style.top = `${TOP()}px`;
+  story.style.bottom = `${BOT()}px`;
+  storyX.style.top = `${TOP() + 10}px`;
+  storyX.hidden = !storyOpen;
+  view.ts = storyOpen && beside() ? story.offsetWidth : 0;
 }
-function closeStory() {
+function showStory(fromTop = false) {
+  storyOpen = true;
+  story.classList.remove("out");
+  storyTab.setAttribute("aria-expanded", "true");
+  if (fromTop) story.scrollTop = 0;
+  placeStory();
+  ease();
+}
+function closeStory(open) {
   if (!storyOpen) return;
   storyOpen = false;
   try { localStorage.setItem("story", "seen"); } catch {}
-  story.classList.add("closing");
-  setTimeout(() => { story.hidden = true; story.classList.remove("closing"); }, reduceMotion ? 0 : 600);
-  openBook(reduceMotion ? 0 : 650);
+  story.classList.add("out");
+  storyTab.setAttribute("aria-expanded", "false");
+  placeStory();
+  ease();
+  if (open) openBook(reduceMotion ? 0 : 450); else inviteOpen(600);
 }
+// The foreword lights the part being read (the one across the middle), the rest waits faintly. Beside it the book
+// stays shut on the desk and, now and then, its cover lifts a little and settles, as if it might open.
+const reading = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) for (const s of story.querySelectorAll(".slide")) s.classList.toggle("on", s === e.target);
+}, { root: story, rootMargin: "-42% 0px -48% 0px" });
+for (const s of story.querySelectorAll(".slide")) reading.observe(s);
+let stirring = false;
+setInterval(() => {
+  if (!storyOpen || !beside() || document.hidden || T || peeking || !frontClosed()) return;
+  stirring = true;
+  peekCover(true);
+  setTimeout(() => { if (stirring) { stirring = false; peekCover(false); } }, 1100);
+}, 7000);
+storyTab.onclick = () => showStory();
+storyX.onclick = () => closeStory(false);
+story.querySelector(".open").onclick = () => closeStory(true);
 function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
   if (document.hidden) {
     addEventListener("visibilitychange", () => openBook(delay), { once: true });
     return;
   }
-  setTimeout(() => { if (!T && !storyOpen && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
+  setTimeout(() => { if (!T && !storyCovers() && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
 }
-story.querySelector(".skipbook").onclick = closeStory;
-story.querySelector(".open").onclick = closeStory;
+
+// The closed book waits for the reader: on a computer the cover lifts a little under the pointer, and a click opens
+// it from there; a touch screen gets one small lift, as an invitation, and a tap opens it.
+const PEEK = 0.09;                                // how far the cover lifts, as a part of a whole turn
+let peeking = false, invited = false;
+const frontClosed = () => (mode === "single" ? si === 0 : cur === 0);
+function peekCover(on) {
+  if (reduceMotion || storyCovers() || view.zoom > 1.05) return;
+  if (on && !peeking && !T && frontClosed() && startTurn(1, true)) {
+    peeking = true;
+    T.hold = true;
+    settle(PEEK);
+  } else if (!on && peeking && T) {
+    peeking = false;
+    T.hold = false;
+    settle(0);
+  }
+}
+function openCover() {   // a click or a tap on the closed book: open it, from the lifted cover if it's lifted
+  if (peeking && T) {
+    peeking = false;
+    T.hold = false;
+    view.tt = 0;
+    ease();
+    settle(1);
+  } else next();
+}
+const overBook = (x, y) => { const p = worldAt(x, y), [x0, x1] = span(); return p.x >= x0 && p.x <= x1 && Math.abs(p.y) <= H / 2; };
+canvas.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse" || pointers.size) return;
+  stirring = false;
+  const over = !T || peeking ? frontClosed() && view.zoom <= 1.05 && overBook(e.clientX, e.clientY) : false;
+  canvas.style.cursor = over ? "pointer" : "";
+  peekCover(over);
+});
+canvas.addEventListener("pointerleave", () => { canvas.style.cursor = ""; peekCover(false); });
+function inviteOpen(delay) {
+  if (document.hidden) { addEventListener("visibilitychange", () => inviteOpen(delay), { once: true }); return; }
+  setTimeout(() => {
+    if (invited || storyCovers() || !frontClosed()) return;
+    invited = true;
+    const touch = matchMedia("(hover: none)").matches;
+    toast(touch ? "Tap the book to open it" : "Click the book to open it");
+    if (touch) { peekCover(true); setTimeout(() => peekCover(false), 900); }
+  }, delay);
+}
 document.getElementById("restory").onclick = () => {
   document.getElementById("about").close();
-  goToFace(0, false);   // back to the closed book, so it opens again after the story
-  showStory();
+  showStory(true);
 };
 
 // Clean addresses: /58 is a page, /fabella a name, /58/glubig an entry to help read (/58/glubig-2 for a second
@@ -1246,8 +1451,20 @@ canvas.addEventListener("pointermove", e => {
   }
   // Not zoomed: a sideways drag turns the page, following the finger.
   if (!drag.turning && drag.moved && Math.abs(dx) > Math.abs(dy) * 1.2) {
-    if (T) finishTurn();
-    if (!startTurn(dx < 0 ? 1 : -1)) { drag = null; return; }
+    if (peeking && T && dx < 0) {                 // the lifted cover: the drag takes it from where it is
+      peeking = false;
+      T.hold = false;
+      T.anim = null;
+      view.tt = 0;
+      ease();
+    } else if (peeking && T) {                    // dragged the other way: let the cover down
+      peekCover(false);
+      drag = null;
+      return;
+    } else {
+      if (T) finishTurn();
+      if (!startTurn(dx < 0 ? 1 : -1)) { drag = null; return; }
+    }
     drag.turning = true;
     drag.t0 = T.t;
     T.twist = Math.max(-1, Math.min(1, drag.w.y / (H / 2))) * (T.dir > 0 ? 1 : -1);   // grabbed high or low
@@ -1277,6 +1494,7 @@ const up = e => {
     drag = null;
     return;
   }
+  if (!drag.moved && view.zoom <= 1.05 && frontClosed() && overBook(e.clientX, e.clientY)) { drag = null; openCover(); return; }
   if (!drag.moved) {
     const now = performance.now();
     if (now - lastTap < 300) {
@@ -1374,7 +1592,8 @@ themeBtn.onclick = () => {
 darkQuery.addEventListener?.("change", themeButton);
 themeButton();
 addEventListener("keydown", e => {
-  if (storyOpen || e.target.closest?.("input, textarea, select, dialog")) return;
+  if (e.key === "Escape" && storyOpen && !document.querySelector("dialog[open]")) { closeStory(false); return; }
+  if (storyCovers() || e.target.closest?.("input, textarea, select, dialog, #story")) return;
   if (e.key === "ArrowRight") next();
   else if (e.key === "ArrowLeft") prev();
   else if (e.key === "+" || e.key === "=") zoomTo(view.zoom * 1.4, view.x, view.y);
@@ -1395,6 +1614,8 @@ function render() {
   });
 }
 function resize() {
+  placeStory();
+  view.side = view.ts;
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -1512,6 +1733,7 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
     render();
     let seen = false;
     try { seen = localStorage.getItem("story") === "seen"; } catch {}
-    if (seen) openBook(900); else showStory();
+    if (!seen && beside()) showStory();   // the history beside the closed book, the first time on a wide screen
+    inviteOpen(900);
   }
 })();
