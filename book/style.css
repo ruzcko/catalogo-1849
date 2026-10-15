@@ -3,10 +3,13 @@
 @font-face { font-family: "IM Fell English"; font-style: italic; src: url("/fonts/IMFeENit28P.woff2") format("woff2"); font-display: swap; }
 @font-face { font-family: "IM Fell English SC"; src: url("/fonts/IMFeENsc28P.woff2") format("woff2"); font-display: swap; }
 
-/* A light, warm room with a faint dot grid: the book lies on it like a book on a desk. */
+/* A warm, old room: a plain wall with a pool of light where the book lies. Light is the house lights up,
+   dark is one lamp over the book. */
 :root {
   --bg: #f1eee8;
-  --dot: #d8d2c6;
+  --grain: .05;
+  --pool: rgba(255, 255, 255, .55);
+  --fade: rgba(60, 45, 30, .07);
   --bar: rgba(241, 238, 232, .86);
   --panel: #fbf9f5;
   --ink: #2a2017;
@@ -19,12 +22,15 @@
   --on-accent: #fff;
   --warn: #a4500f;
   --s3: #7a5a14; --s3b: #c4a35e; --s4: #a4500f; --s4b: #e0995a;
+  --placard: "IM Fell English", Georgia, serif;
   color-scheme: light;
 }
 /* Dark: the device's setting, unless the reader picked one (data-theme, set before the page paints). */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #1d1712;
-  --dot: #352b22;
+  --grain: .08;
+  --pool: rgba(150, 110, 60, .2);
+  --fade: rgba(0, 0, 0, .45);
   --bar: rgba(29, 23, 18, .84);
   --panel: #2a221b;
   --ink: #f3ead6;
@@ -41,7 +47,9 @@
 } }
 :root[data-theme="dark"] {
   --bg: #1d1712;
-  --dot: #352b22;
+  --grain: .08;
+  --pool: rgba(150, 110, 60, .2);
+  --fade: rgba(0, 0, 0, .45);
   --bar: rgba(29, 23, 18, .84);
   --panel: #2a221b;
   --ink: #f3ead6;
@@ -58,16 +66,23 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; color: var(--ink); overflow: hidden;
-  background: radial-gradient(circle, var(--dot) 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg);
+html, body { margin: 0; height: 100%; color: var(--ink); overflow: hidden; }
+/* The wall: one surface, dimming towards its top and bottom edges (where the bars sit, unboxed), lit where the
+   book lies. */
+body { background: linear-gradient(var(--fade), transparent 130px), linear-gradient(to top, var(--fade), transparent 130px),
+  radial-gradient(ellipse 60% 55% at 62% 46%, var(--pool), transparent 70%), var(--bg); }
+/* A faint grain on the wall, so it reads as plaster rather than a flat colour. */
+body::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: var(--grain);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+html, body {
   font: 16px/1.45 "IM Fell English", Georgia, serif; -webkit-tap-highlight-color: transparent; }
 #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
 #stage.dragging { cursor: grabbing; }
 
-.bar { position: fixed; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 10px 16px;
-  background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2; }
-.bar.top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
-.bar.bottom { bottom: 0; justify-content: center; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+/* The bars are part of the wall: the room dims towards its top and bottom edges, nothing is boxed. */
+.bar { position: fixed; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px; z-index: 2; }
+.bar.top { top: 0; padding-top: max(12px, env(safe-area-inset-top)); }
+.bar.bottom { bottom: 0; justify-content: center; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 .title { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
 .title b { font-family: "IM Fell English SC", Georgia, serif; font-weight: 400; font-size: 17px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
@@ -95,6 +110,9 @@ button { font: inherit; color: var(--ink); background: none; border: 0; cursor: 
 .toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: var(--toast); color: var(--toast-ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 999px; z-index: 3;
   max-width: calc(100vw - 32px); text-align: center; }
+/* A museum label for a part of the shut book, by the tap */
+.label { position: fixed; z-index: 3; max-width: min(300px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 10px;
+  background: var(--toast); color: var(--toast-ink); font-size: 14px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 dialog { max-width: min(520px, calc(100vw - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line);
   border-radius: 16px; padding: 22px 24px; }
 dialog::backdrop { background: rgba(42, 32, 23, .35); }
@@ -173,48 +191,67 @@ dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; b
 .entry .small { color: var(--muted); font-size: 13px; }
 .entry .askfriend { color: var(--accent); text-decoration: underline; padding: 0; font-size: 14px; }
 
-/* The history, optional, in a panel at the side: beside the book on wide screens, over it on narrow ones. A tab on
-   the left edge opens it. Its top and bottom follow the bars (set from book.js). */
+/* The foreword: museum placards beside the book on a wide screen, below it on a phone. A tab on the left edge opens
+   it. Its top and bottom follow the bars and the book (set from book.js). */
 .storytab { position: fixed; left: 0; top: 50%; z-index: 2; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl;
   padding: 16px 8px; border-radius: 10px 0 0 10px; border: 1px solid var(--line); border-right: 0; background: var(--panel);
   font-family: "IM Fell English SC", Georgia, serif; font-size: 16px; letter-spacing: .06em; color: var(--muted); }
 .storytab:hover { color: var(--accent); }
 .storytab[aria-expanded="true"] { display: none; }
-/* The history reads like a foreword: text floating on the desk beside the book, no box round it, fading in toward the
-   middle and out at the edges as it scrolls. */
-.story { position: fixed; left: 0; top: 60px; bottom: 60px; z-index: 2; width: min(520px, 42vw); overflow-y: auto; overscroll-behavior: contain;
-  padding: 0 40px 0 64px; scrollbar-width: none; transition: transform .6s ease, opacity .6s ease, visibility 0s;
-  -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); }
+/* Wall text: one placard fills the panel at a time and snaps into place; the one being read is lit, the rest wait. */
+.story { position: fixed; left: 0; top: 60px; bottom: 60px; z-index: 2; width: min(540px, 40vw); overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 40px 0 64px; scrollbar-width: none; scroll-snap-type: y proximity; font-family: var(--placard);
+  transition: transform .6s ease, opacity .6s ease, visibility 0s;
+  -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 90%, transparent); }
 .story::-webkit-scrollbar { display: none; }
 .story.out { transform: translateX(-30px); opacity: 0; visibility: hidden; transition: transform .5s ease, opacity .5s ease, visibility 0s .5s; }
 .storyx { position: fixed; left: 18px; top: 72px; z-index: 3; width: 36px; height: 36px; border-radius: 50%; font-size: 17px; color: var(--muted); }
 .storyx:hover { background: var(--tint); color: var(--ink); }
-.story .slide { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; padding: 24px 0;
-  opacity: .22; transition: opacity .6s ease; }
+/* Progress: a dot for each placard, down the left margin (across the top of the panel on a phone). */
+.dots { position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; gap: 12px; }
+.dots button { width: 22px; height: 22px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+.dots button::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .45; transition: transform .3s, opacity .3s; }
+.dots button:hover::before { opacity: .9; }
+.dots button[aria-current="true"]::before { background: var(--accent); opacity: 1; transform: scale(1.5); }
+.dots.below { left: 20px; top: auto; transform: none; flex-direction: row; gap: 4px; }
+.story .skipto { position: sticky; top: 10px; z-index: 1; display: block; margin: 0 0 -30px auto; width: max-content; font: inherit; font-size: 13px;
+  color: var(--muted); text-decoration: underline; text-underline-offset: .2em; padding: 4px 12px; border-radius: 999px;
+  background: var(--bar); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.story .skipto:hover { color: var(--accent); }
+.story .slide { min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 56px 0 40px;
+  scroll-snap-align: start; opacity: .25; transition: opacity .6s ease; }
 .story .slide.on { opacity: 1; }
-.story .slide:first-child { min-height: 84vh; }
-.story .slide:last-child { min-height: 84vh; }
-.story .kicker { font-family: "IM Fell English SC", Georgia, serif; color: var(--accent); letter-spacing: .06em; margin: 0 0 10px; font-size: 17px; }
-.story h2 { font-weight: 400; font-size: 38px; line-height: 1.1; margin: 0 0 14px; }
-.story .line { font-size: 20px; line-height: 1.5; margin: 0 0 14px; }
-.story .hero { font-size: 84px; line-height: 1; margin: 0 0 8px; }
-.story .src { color: var(--muted); font-size: 14px; margin: 14px 0 0; }
+.story .kicker { font-family: "IM Fell English SC", Georgia, serif; color: var(--accent); letter-spacing: .1em; margin: 0 0 12px; font-size: 15px; }
+.story .num { display: inline-block; min-width: 1.6em; margin-right: .4em; padding: 1px 0; border: 1px solid var(--accent); border-radius: 999px;
+  text-align: center; font-size: 13px; line-height: 1.3; }
+.story h2 { font-weight: 400; font-size: 36px; line-height: 1.12; margin: 0 0 14px; }
+.story h2.title { font-size: 40px; font-style: italic; }
+.story .line { font-size: 18px; line-height: 1.55; margin: 0 0 14px; }
+.story .src { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 12px 0 0; }
 .story .src a { color: var(--muted); }
-.story .ledger { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 4px 0; margin: 0 0 18px; font-size: 19px; font-style: italic; }
-.story .ledger div { border-bottom: 1px solid var(--line); padding: 4px 0; }
-.story .ledger div:last-child { border-bottom: 0; }
-.story .ledger small { color: var(--muted); font-size: 12px; float: right; font-style: normal; }
-.story .letters { font-family: "IM Fell English SC", Georgia, serif; font-size: 52px; letter-spacing: .12em; margin: 0 0 12px; color: var(--accent); }
-.story .open { font-size: 17px; padding: 9px 20px; margin-top: 8px; align-self: flex-start; }
-@media (max-width: 759px) {   /* on a phone the foreword lies over the book, on the desk's own colour */
-  .story { width: auto; right: 0; padding: 0 24px 0 28px; background: radial-gradient(circle, var(--dot) 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg); }
-  .story .slide { min-height: 60vh; opacity: 1; }
-  .story h2 { font-size: 30px; }
-  .story .line { font-size: 18px; }
-  .story .hero { font-size: 64px; }
-  .storyx { left: auto; right: 12px; }
+.story .hint { color: var(--muted); font-style: italic; font-size: 14px; margin: 18px 0 0; }
+.story .plate { margin: 0 0 18px; }
+.story .plate img { display: block; height: 170px; width: auto; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.story .plate.scan .img { width: min(100%, 300px); aspect-ratio: 4 / 3; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  background: #e9dfc9 url("https://apelyido.ruzcko.com/scan/pages/1/2.webp") 22% 16% / 330% auto no-repeat; }
+.story figcaption { color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 8px; max-width: 300px; }
+.story .doors { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 16px; }
+.story .doors .open { font-size: 16px; padding: 10px 20px; }
+.story .door { font-size: 15px; color: var(--ink); padding: 9px 18px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.story .door:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 759px) {   /* on a phone, the book above and the placards below, on the wall's own colour */
+  .story.below { width: auto; right: 0; padding: 0 22px 0 24px; background: linear-gradient(transparent, var(--bg) 12%);
+    -webkit-mask-image: none; mask-image: none; }
+  .story .slide { padding: 40px 0 32px; }
+  .story h2 { font-size: 27px; }
+  .story h2.title { font-size: 30px; }
+  .story .line { font-size: 16px; }
+  .story .plate img { height: 120px; }
+  .story .plate.scan .img { width: min(100%, 220px); }
+  .storyx { display: none; }   /* "Skip to the book" closes it there */
   .storytab { padding: 12px 6px; font-size: 14px; }
   body:not(.shut) .storytab { display: none; }   /* on a phone, the tab waits by the closed book; the ? has it too */
+  body.foreword .bar.bottom { display: none; }    /* the book is shut while the foreword is open: no page controls */
 }
 @media (prefers-reduced-motion: reduce) { .story, .story.out { transition: none; } }
 
