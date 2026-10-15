@@ -98,6 +98,14 @@ const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2 * W * 1.18, H * 1.12),
   new THREE.MeshBasicMaterial({ map: radialShadow(), transparent: true, depthWrite: false, opacity: 0.7 }));
 shadow.position.z = -0.02;
 scene.add(shadow);
+// The plinth the shut book stands on, as an exhibit does: a block of plaster (--plinth), lit like the book, under the
+// desk's shadow. It fades out as the book opens, since the reading view looks straight down on the pages.
+const PLINTH_D = 0.32;
+const plinthMat = std(0xcfd3d1, { transparent: true });
+const plinth = new THREE.Mesh(new THREE.BoxGeometry(W * 1.16, H * 1.1, PLINTH_D), plinthMat);
+plinth.position.z = -0.031 - PLINTH_D / 2;
+plinth.receiveShadow = true;
+scene.add(plinth);
 
 // The book is one group, so the closed book can be turned over in the hand: `book` sits at the closed block's
 // centre and `inner` holds every part at the coordinates the rest of the code uses (the spine at x = 0).
@@ -841,6 +849,7 @@ function place() {
   const cx = mode === "spread" && cur === LEAVES ? -W / 2 : W / 2, cz = closedBook() ? Math.max(leftZ, rightZ) / 2 : 0;
   book.position.set(cx, 0, cz);
   inner.position.set(-cx, 0, -cz);
+  plinth.position.x = cx;
   poseCovers(null);
   // Closed, the book is seen at an angle, lying on the desk; open, from a little in front of straight above.
   const tt = tiltFor();
@@ -964,6 +973,7 @@ function turn(dir, dur) {
 const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0, side: 0, ts: 0, below: 0, tb: 0, dip: 0, td: 0 };   // x, y, zoom, tilt, side: now; tx, ty, tz, tt, ts: where the camera eases to; dip: the gutter, 0 shut, 1 open
 // Reading, the camera sits a little in front of straight above, so the open book keeps its depth; zoomed in to
 // check a line, it goes straight above. Shut, the book is seen lying on the desk (tilt 1).
+const ISO_PITCH = Math.atan(Math.SQRT2), ISO_YAW = Math.PI / 4;   // the isometric angles
 const READ_TILT = 0;   // 0: straight above, as the book always was (a small value tilts the open book)
 const tiltFor = () => (closedBook() ? 1 : view.tz > 1.05 ? 0 : READ_TILT);
 // side: the width (px) of the foreword beside the book, which the book's view leaves free on the left; below: its
@@ -1000,17 +1010,22 @@ function fitDistance() {
 function applyCamera() {
   // tilt 0: straight above the page. tilt 1: the book lying on a desk, seen from the front and a little to the
   // right, a step further back. In between, the camera swings between the two.
-  const tilt = view.tilt, d = (fitDistance() / view.zoom) * (1 + 0.22 * tilt * tilt);   // a small step back for the desk view
+  // A step back for the isometric view, so the shut book, turned 45 degrees, and its plinth fit with room round them.
+  const tilt = view.tilt, d = (fitDistance() / view.zoom) * (1 + 0.75 * smooth(0, 1, tilt));
   // Keep the bars from covering the page: shift the view by half the difference between the two bars.
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt) + ((view.below / innerHeight) * d * tan) / Math.cos(0.82 * tilt);
+  // Shut, the book is seen as in an isometric drawing: 45 degrees round and about 35 degrees above the desk (the camera
+  // 54.7 degrees from straight down; the long lens keeps it close to a true isometric). Open, straight above.
+  const iso = smooth(0.3, 1, tilt), pitch = 0.82 * tilt + (ISO_PITCH - 0.82) * iso, yaw = ISO_YAW * iso;
+  const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt) + ((view.below / innerHeight) * d * tan) / Math.cos(pitch);
   // And move it over by half the panel's width, so the book sits in the middle of the space the panel leaves.
   // The shift runs along the camera's own up, so a yawed camera moves the book up the screen, not sideways.
-  const pitch = 0.82 * tilt, yaw = 0.32 * tilt;
   const x = view.x - (view.side / innerWidth) * d * tan * camera.aspect + shift * Math.sin(yaw), y = view.y - shift * Math.cos(yaw);
   camera.position.set(x + d * Math.sin(pitch) * Math.sin(yaw), y - d * Math.sin(pitch) * Math.cos(yaw), d * Math.cos(pitch));
   camera.up.set(-Math.sin(yaw), Math.cos(yaw), 0);
   camera.lookAt(x, y, 0);
+  plinthMat.opacity = smooth(0.4, 1, tilt);
+  plinth.visible = plinthMat.opacity > 0.01;
   document.getElementById("unzoom").hidden = view.zoom < 1.05;
 }
 
@@ -1114,7 +1129,7 @@ function updateBar() {
   const text = printed.length === 2
     ? `pp. ${printed[0].n}–${printed[1].n}${printed[1].letter ? ` · ${printed[1].letter}` : ""}`
     : label(printed[0]) || named[kind] || "";
-  document.getElementById("where").textContent = text || "Catálogo";
+  document.getElementById("where").innerHTML = esc(text || "Catálogo").replace(/\d+/g, "<span class=\"n\">$&</span>");
   document.getElementById("prev").disabled = mode === "single" ? si === 0 : cur === 0;
   document.getElementById("next").disabled = mode === "single" ? si === SINGLE.length - 1 : cur === LEAVES;
   // Help for a page in view with no transcription (none today: both scans cover every page).
@@ -1536,7 +1551,7 @@ async function openEntry({ page, scan, e, orig = e }) {
   const link = await entryPath(page, e);
   setPath(link);
   dlg.innerHTML = `
-    <div class="eh"><h2>${blank ? "Unread line" : `${esc(name)}.`}</h2><span class="chip s${status}">${blank ? "Unread" : STATUS[status]}</span><button type="button" class="x" aria-label="Close">✕</button></div>
+    <div class="eh"><h2>${blank ? "Unread line" : `${esc(name)}.`}</h2><span class="chip s${status}">${blank ? "Unread" : STATUS[status]}</span><button type="button" class="x" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <p class="why">${blank ? "Neither scan could read this line, so it has no reading yet. Can you read it?" : WHY[status] +
       (status <= 2 ? " Still, an OCR can be wrong: if the scan shows something else, tell us." : "")}</p>
     ${CROPS && (crop != null || (meta && meta.scale && meta.width)) ? `<figure class="crop"><div class="img" style="${cropStyle(false).css}"><span class="mark" hidden></span></div>
@@ -1899,11 +1914,12 @@ function themeButton() {
   const label = isDark() ? "Light mode" : "Dark mode";
   themeBtn.setAttribute("aria-label", label);
   themeBtn.title = label;
-  document.querySelector('meta[name="theme-color"]').content = isDark() ? "#1d1712" : "#f1eee8";
+  document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue("--wall").trim();
   // The room's light: the house lights up, or down to one lamp over the book.
   key.intensity = isDark() ? 2.7 : 2.3;
   fill.intensity = isDark() ? 0.65 : 1.2;
   fill.groundColor.set(isDark() ? 0x1a140e : 0x5a4a3a);
+  plinthMat.color.set(getComputedStyle(document.documentElement).getPropertyValue("--plinth").trim() || "#cfd3d1");
   if (FACES.length) render();
 }
 themeBtn.onclick = () => {

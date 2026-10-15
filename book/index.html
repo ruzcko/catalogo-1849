@@ -14,13 +14,14 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://catalogo-1849.ruzcko.com/og?v=1">
-<meta name="theme-color" content="#f1eee8">
+<meta name="theme-color" content="#5e1c1f">
 <link rel="preload" href="/fonts/IMFeENrm28P.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/IMFeENit28P.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/IMFeENsc28P.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/EBGaramond-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" crossorigin>
 <script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
-<link rel="stylesheet" href="/style.css?v=44">
+<link rel="stylesheet" href="/style.css?v=45">
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" } }</script>
 </head>
 <body>
@@ -29,25 +30,25 @@
 
 <header class="bar top">
   <div class="title"><b>Catálogo alfabético de apellidos</b><span>1849</span></div>
-  <button type="button" id="searchbtn" class="icon" aria-label="Find a surname"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  <button type="button" id="searchbtn" class="icon" aria-label="Find a surname"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0m18 11l-6-6"/></svg></button>
   <form class="search" role="search" autocomplete="off">
     <input id="q" type="search" placeholder="Find a surname" aria-label="Find a surname in the book" spellcheck="false">
     <ul id="hits" role="listbox" hidden></ul>
   </form>
-  <button type="button" id="theme" class="icon" aria-label="Dark mode"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
-  <button type="button" id="info" class="icon" aria-label="About this book">?</button>
+  <button type="button" id="theme" class="icon" aria-label="Dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 19h2.25C8.978 19 12 15.866 12 12s3.022-7 6.75-7H21"/></svg></button>
+  <button type="button" id="info" class="icon" aria-label="About this book"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0m9 5v.01M12 13.5a1.5 1.5 0 0 1 1-1.5a2.6 2.6 0 1 0-3-4"/></svg></button>
 </header>
 
 <nav class="bar bottom" aria-label="Pages">
-  <button type="button" id="prev" class="icon" aria-label="Previous page">‹</button>
+  <button type="button" id="prev" class="icon" aria-label="Previous page"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="m15 6l-6 6l6 6"/></svg></button>
   <button type="button" id="where" class="where" aria-haspopup="dialog" aria-label="Go to a letter or a page"></button>
-  <button type="button" id="next" class="icon" aria-label="Next page">›</button>
-  <button type="button" id="unzoom" class="icon" aria-label="Zoom out" hidden>⤢</button>
+  <button type="button" id="next" class="icon" aria-label="Next page"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="m9 6l6 6l-6 6"/></svg></button>
+  <button type="button" id="unzoom" class="icon" aria-label="Zoom out" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M5 9h4V5M3 3l6 6m-4 6h4v4m-6 2l6-6m10-6h-4V5m0 4l6-6m-2 12h-4v4m0-4l6 6"/></svg></button>
   <button type="button" id="layout" class="layout" aria-haspopup="dialog">View</button>
 </nav>
 
 <button type="button" id="storytab" class="storytab" aria-controls="story" aria-expanded="false">Foreword</button>
-<button type="button" id="storyx" class="storyx" aria-label="Close the foreword" hidden>✕</button>
+<button type="button" id="storyx" class="storyx" aria-label="Close the foreword" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg></button>
 <nav id="dots" class="dots" aria-label="The foreword, placard by placard" hidden></nav>
 <aside id="story" class="story out" aria-label="A foreword to this book">
   <button type="button" class="skipto" id="skipto">Skip to the book</button>
@@ -115,7 +116,7 @@
 <dialog id="entry" class="entry" aria-label="Help read this name"></dialog>
 
 <dialog id="index" class="index" aria-labelledby="index-h">
-  <div class="eh"><h2 id="index-h">Go to</h2><button type="button" class="x" aria-label="Close">✕</button></div>
+  <div class="eh"><h2 id="index-h">Go to</h2><button type="button" class="x" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg></button></div>
   <div class="letters" role="group" aria-label="Sections of the book, by letter"></div>
   <form class="goto" autocomplete="off">
     <label>Page <input id="jump" type="text" inputmode="numeric" enterkeyhint="go" maxlength="30" spellcheck="false"
@@ -125,14 +126,14 @@
 </dialog>
 
 <dialog id="views" class="views" aria-labelledby="views-h">
-  <div class="eh"><h2 id="views-h">View</h2><button type="button" class="x" aria-label="Close">✕</button></div>
+  <div class="eh"><h2 id="views-h">View</h2><button type="button" class="x" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg></button></div>
   <div class="vopts" role="radiogroup" aria-labelledby="views-h"></div>
   <p class="legend small" aria-label="What the shades mean"><span class="sw s1"></span> sure or read by a person
     <span class="sw s2"></span> likely <span class="sw s3"></span> best guess <span class="sw s4"></span> blurry</p>
 </dialog>
 
 <dialog id="list" class="list" aria-labelledby="list-h">
-  <div class="eh"><h2 id="list-h">Names on these pages</h2><button type="button" class="x" aria-label="Close">✕</button></div>
+  <div class="eh"><h2 id="list-h">Names on these pages</h2><button type="button" class="x" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/></svg></button></div>
   <div class="pages"></div>
 </dialog>
 
@@ -141,7 +142,7 @@
   <p>In 1849, many Filipinos had a baptismal name but no family name passed down, and so many shared the same saints' names that the tax lists and parish books couldn't tell people apart (the decree's preamble, 1973 reprint, p. x). So Governor-General Narciso Clavería's decree of 21 November 1849 sent this book of about 60,000 names, Spanish and native, to every province, for families without a fixed surname to take one.</p>
   <p>Every page is set in type from an open, machine-read transcription of the National Archives of the Philippines' 1973 reprint, read from three scans: Google's, of the University of Michigan's copy, the Filipinas Heritage Library's, and FamilySearch's microfilm. Each name keeps its column and line from the scanned page. Some readings are uncertain.</p>
   <p><b>View</b> picks how the pages look: <b>Tags</b> shades every name by how sure the OCR is of it (green: sure, blue: likely, amber: its best guess, orange: blurry); <b>Plain</b> sets the names without shading; <b>As seen</b> sets each name where it sits on the page; <b>Scan</b> shows the scanned page itself (digitized by Google from the University of Michigan's copy of the 1973 National Archives reprint). The OCR can be wrong even where it's sure: tap any name to see its line on the scan and tell us how you read it. Votes are anonymous: we keep the reading and a random code your browser makes up, nothing else.</p>
-  <p>Shut, the book can be turned over: drag it, and tap its spine or its edge for a label. Open, drag or use ‹ › to turn pages. Double-tap or pinch to zoom. Tap the page label for the book's letters, A to Z, or a page number.</p>
+  <p>Shut, the book can be turned over: drag it, and tap its spine or its edge for a label. Open, drag or use the arrows to turn pages. Double-tap or pinch to zoom. Tap the page label for the book's letters, A to Z, or a page number.</p>
   <p class="small"><b>Further reading:</b> the decree and Domingo Abella's introduction, in the National Archives' 1973 reprint, pp. vii–xvi;
     Francis Alvarez Gealogo, "Looking for Claveria's Children," in <i>Personal Names in Asia</i> (NUS Press, 2009);
     Norman G. Owen, "The Principalia in Philippine History: Kabikolan, 1790–1898," <i>Philippine Studies</i> 22 (1974);
@@ -150,6 +151,6 @@
   <form method="dialog"><button>Close</button> <button type="button" id="restory">The foreword</button></form>
 </dialog>
 
-<script type="module" src="/book.js?v=44"></script>
+<script type="module" src="/book.js?v=45"></script>
 </body>
 </html>

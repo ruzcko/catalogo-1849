@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo book: three directions</title>
+<!--
+  Design-brief step 2 for the Catálogo virtual book (catalogo-1849). Standalone: open it directly in a browser.
+  Each column is one look, shown with the book's real content: the foreword's placards scrolling beside the
+  book (scroll inside each stage), the 60,000 counter, a name entry and the two main buttons.
+  The page frame uses system-ui on purpose, so it stays neutral and the three directions stand out.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Instrument+Sans:wght@400;600&family=Courier+Prime:wght@400;700&family=Spectral:wght@400;600&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=EB+Garamond:wght@400;600&display=swap">
+<style>
+  /* ---------- Page frame (neutral) ---------- */
+  :root { --f-bg: #e9ebee; --f-fg: #18181a; --f-muted: #5c5c62; --f-line: #d0d0d6; }
+  :root[data-theme="dark"] { --f-bg: #0f0f11; --f-fg: #ececee; --f-muted: #a2a2aa; --f-line: #2a2a2f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--f-bg); color: var(--f-fg); font: 15px/1.5 system-ui, sans-serif; } /* design-lint: ignore (neutral frame) */
+  .intro { max-width: 1320px; margin: 0 auto; padding: 24px 16px 8px; }
+  .intro h1 { margin: 0 0 4px; font-size: 22px; }
+  .intro p { margin: 0 0 8px; color: var(--f-muted); max-width: 78ch; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 0; }
+  .bar button { font: inherit; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--f-line); background: transparent; color: inherit; cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--f-fg); color: var(--f-bg); border-color: var(--f-fg); }
+  .grid { max-width: 1320px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+
+  /* ---------- One direction = one token set ---------- */
+  .dir { background: var(--bg); color: var(--ink); font-family: var(--sans); border: 1px solid var(--line);
+         border-radius: var(--r-card); padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .dir .label { font: 600 13px/1.2 var(--sans); color: var(--muted); margin: 0; }
+  .dir h2 { font: 700 25px/1.15 var(--display); margin: 0; }
+  .dir .why { margin: 0; font-size: 14px; }
+
+  /* The hero: the book's room, with the foreword scrolling beside the book. */
+  .stage { position: relative; background: var(--hero-bg); color: var(--hero-fg); border-radius: var(--r-card);
+           display: grid; grid-template-columns: 1.15fr 1fr; height: 360px; overflow: hidden; }
+  .stagewrap { container-type: inline-size; }
+  .story { overflow-y: auto; overflow-x: hidden; padding: 0 14px; scrollbar-width: thin; scrollbar-color: var(--hero-muted) transparent;
+           -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
+  .placard { min-height: 300px; display: flex; flex-direction: column; justify-content: center; padding: 30px 0; opacity: .3; transition: opacity .5s ease; }
+  .placard.on { opacity: 1; }
+  .placard:first-child { padding-top: 60px; }
+  .placard:last-child { min-height: 330px; }
+  .placard .k { margin: 0 0 6px; font: 600 13px/1.2 var(--sans); color: var(--hero-accent); }
+  .placard h3 { margin: 0 0 8px; font: 700 22px/1.12 var(--display); }
+  .placard p { margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+  .placard .src { color: var(--hero-muted); font-size: 12px; margin: 6px 0 0; }
+  .count { display: block; font: 700 36px/1 var(--num); font-variant-numeric: tabular-nums lining-nums; color: var(--hero-accent); margin: 2px 0 6px; }
+  .book { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0; }
+  .book img { width: 72%; max-width: 170px; height: auto; display: block; }
+  /* Narrow: the book above, the foreword below it, as on a phone. */
+  @container (max-width: 520px) {
+    .stage { grid-template-columns: 1fr; grid-template-rows: 170px 1fr; height: 480px; }
+    .stage .book { order: -1; }
+    .stage .book img { width: auto; height: 130px; }
+  }
+
+  .row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 12px; display: flex; gap: 12px; align-items: center; }
+  .row .box { min-width: 56px; padding: 6px 4px; text-align: center; background: var(--surface-2); border-radius: calc(var(--r-ctl) - 2px); }
+  .row .box b { display: block; font: 700 22px/1 var(--num); font-variant-numeric: tabular-nums lining-nums; }
+  .row .box small { font-size: 12px; color: var(--muted); }
+  .row .name { font: 700 18px/1.2 var(--display); margin: 0; }
+  .row .sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .row .sub em { font-style: normal; color: var(--accent-ink); font-weight: 600; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { font: 600 15px/1 var(--sans); min-height: 44px; padding: 0 18px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .btn.primary { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--on-accent); }
+
+  .type p { margin: 0 0 4px; }
+  .type .sample-num { font: 500 16px/1.4 var(--num); font-variant-numeric: tabular-nums lining-nums; }
+  .type .fonts { font-size: 13px; color: var(--muted); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .sw { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; font-size: 12px; background: var(--surface); }
+  .sw i { display: block; height: 32px; }
+  .sw span { display: block; padding: 4px 6px; color: var(--muted); }
+  .checks { font: 500 12px/1.6 var(--num); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .checks .fail { color: var(--accent-ink); font-weight: 700; }
+
+  /* ---------- A · Museum wing: a Prado gallery, garnet walls, a gilt frame, the book on a plinth ---------- */
+  .dir-a { --display: "Bodoni Moda", serif; --sans: "Instrument Sans", sans-serif; --num: "Instrument Sans", sans-serif;
+    --r-card: 0px; --r-ctl: 0px;
+    --bg: #dcdfdd; --surface: #eceeed; --surface-2: #cfd3d1; --ink: #1c1a1a; --muted: #4f4b4a; --line: #b9bdbb;
+    --accent: #8e2a2c; --accent-ink: #7a2224; --on-accent: #ffffff;
+    --hero-bg: #5e1c1f; --hero-fg: #f6efe8; --hero-muted: #dcc3bd; --hero-accent: #e9c27a; }
+  [data-theme="dark"] .dir-a {
+    --bg: #151314; --surface: #1f1c1d; --surface-2: #2a2627; --ink: #ece8e6; --muted: #b3aba8; --line: #3a3536;
+    --accent: #c8585a; --accent-ink: #e07a7b; --on-accent: #151314;
+    --hero-bg: #3a1214; --hero-fg: #f6efe8; --hero-muted: #d5b6b0; --hero-accent: #e9c27a; }
+  .dir-a .stage { box-shadow: inset 0 0 0 6px var(--hero-accent), inset 0 0 0 7px var(--hero-bg); }  /* the gilt frame */
+  .dir-a .book { background: radial-gradient(ellipse 70% 55% at 50% 30%, color-mix(in srgb, var(--hero-accent) 26%, transparent), transparent 70%); }
+  .dir-a .book::after { content: ""; width: 58%; max-width: 150px; height: 14px; background: var(--surface-2); }  /* the plinth */
+  .dir-a .placard h3 { font-weight: 500; font-size: 24px; }
+  .dir-a .placard .k { letter-spacing: .04em; }
+
+  /* ---------- B · Reading room: the National Archives, archival-box green, a manila call slip, typed ---------- */
+  .dir-b { --display: "Courier Prime", monospace; --sans: "Spectral", serif; --num: "Courier Prime", monospace;  /* design-lint: ok typed call slips are the concept */
+    --r-card: 3px; --r-ctl: 3px;
+    --bg: #e2e7e4; --surface: #f1f4f2; --surface-2: #d4dbd7; --ink: #172019; --muted: #47534b; --line: #bcc6c0;
+    --accent: #2f5d4a; --accent-ink: #27503f; --on-accent: #ffffff;
+    --hero-bg: #e8d6a6; --hero-fg: #2a2418; --hero-muted: #5b4f35; --hero-accent: #8a2b1d; --desk: #3f5a4b; }
+  [data-theme="dark"] .dir-b {
+    --bg: #0f1813; --surface: #17221c; --surface-2: #1f2c25; --ink: #e4ebe6; --muted: #a3b2a9; --line: #2c3a32;
+    --accent: #d8b45a; --accent-ink: #e3c26e; --on-accent: #0f1813;
+    --hero-bg: #2a2416; --hero-fg: #f1e6c8; --hero-muted: #c8b88f; --hero-accent: #e8846f; --desk: #17221c; }
+  .dir-b .stage { background: var(--desk); padding: 14px; gap: 12px; }
+  .dir-b .story { background: var(--hero-bg) repeating-linear-gradient(transparent 0 23px, color-mix(in srgb, var(--hero-muted) 30%, transparent) 23px 24px);
+                  border-radius: 2px; -webkit-mask-image: none; mask-image: none; }   /* the ruled call slip */
+  .dir-b .placard { min-height: 240px; }
+  .dir-b .placard .k { font-family: var(--num); }
+  .dir-b .book img { transform: rotate(-4deg); box-shadow: 0 10px 18px color-mix(in srgb, var(--ink) 35%, transparent); }
+
+  /* ---------- C · Parish office, 1849: rag paper, iron-gall ink, a wax seal, by candlelight at night ---------- */
+  .dir-c { --display: "IM Fell English SC", serif; --sans: "IM Fell English", serif; --num: "EB Garamond", serif;
+    --r-card: 2px; --r-ctl: 2px;
+    --bg: #efe6d2; /* design-lint: ok an 1849 parish register is rag paper; the concept calls for it */
+    --surface: #f6efdf; --surface-2: #e4d8bd; --ink: #2b1d14; --muted: #5e4a39; --line: #cdbd9c;
+    --accent: #8d1f17; --accent-ink: #7c1b14; --on-accent: #fbf3e6;
+    --hero-bg: #3b2a1d; --hero-fg: #f3e7cf; --hero-muted: #d2bf9c; --hero-accent: #e0a94e; }
+  [data-theme="dark"] .dir-c {
+    --bg: #17110c; --surface: #211912; --surface-2: #2c2218; --ink: #efe4cc; --muted: #bfae8c; --line: #3d3022;
+    --accent: #d4553f; --accent-ink: #e57a62; --on-accent: #17110c;
+    --hero-bg: #f0e4c8; --hero-fg: #2b1d14; --hero-muted: #5e4a39; --hero-accent: #8d1f17; }
+  .dir-c .story { border-left: 2px solid var(--hero-accent); margin: 18px 0; }   /* the register's red margin rule */
+  .dir-c .book { background: radial-gradient(circle at 60% 20%, color-mix(in srgb, var(--hero-accent) 28%, transparent), transparent 62%); }
+  .dir-c .placard h3 { font-size: 23px; font-weight: 400; }
+  .dir-c .placard p { font-size: 15px; }
+  .dir-c .row .name { font-family: var(--sans); font-weight: 400; font-size: 20px; }
+</style>
+</head>
+<body>
+<header class="intro">
+  <h1>The Catálogo book: three directions</h1>
+  <p>Each column is one possible look for the virtual book: a font pairing, a colour palette, and the room the book sits in, with the foreword scrolling beside it. Scroll inside each picture to read the placards. Pick one, or mix (for example "A's fonts with C's colours").</p>
+  <div class="bar" role="group" aria-label="Theme">
+    <button type="button" data-set="light">Light</button>
+    <button type="button" data-set="dark">Dark</button>
+    <button type="button" data-set="system">Match my device</button>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="dir dir-a" data-key="a"></section>
+  <section class="dir dir-b" data-key="b"></section>
+  <section class="dir dir-c" data-key="c"></section>
+</main>
+
+<script>
+// ---------- The book's real content ----------
+const COVER = "../book/img/catalogo-1849.jpg";
+const PLACARDS = [
+  { k: "Manila, 1849", h: "Catálogo alfabético de apellidos", count: 60000,
+    p: "surnames, printed and sent to every province, for families who had none.",
+    src: "Source: the decree, Arts. 1–3, 1973 reprint, pp. x–xi" },
+  { k: "Before 1849", h: "A country of namesakes.",
+    p: "By 1849 thousands of people shared one saint's name. A man was called de la Cruz, and so were his neighbours. The tax rolls and the parish books could not say who was who.",
+    src: "Source: the decree, preamble and Art. 9, pp. x–xi" },
+  { k: "Letter by letter", h: "Albay, letter by letter.",
+    p: "In old Albay the alphabet was handed out town by town: A at the capital, B and C along the coast to Tiwi, and so on round the province.",
+    src: "Source: Abella, introduction, 1973 reprint, p. vii" },
+];
+const CONTENT = {
+  row: { box: "58", unit: "page", name: "glubig.", sub: "Read from the scan, column 3", flag: "Best guess" },
+  primary: "Open the book", secondary: "Skip to the book",
+  directions: {
+    a: { name: "A · Museum wing", feels: "Feels like a gallery in the Prado: the book is the exhibit.",
+         why: "Garnet walls like the Prado's old galleries (the museum that holds Clavería's portrait), a gilt frame, the book on a plinth under a spotlight. Bodoni headlines and a quiet grotesque for the wall labels; square corners like frames. Dark: the gallery after hours.",
+         fonts: "Bodoni Moda (headlines) · Instrument Sans (labels, text and numbers)" },
+    b: { name: "B · Reading room", feels: "Feels like the National Archives reading room: the book is brought to your desk.",
+         why: "Archival-box green, a ruled manila call slip for the foreword, typed headings and a red rubber-stamp ink. The book lies at an angle on the desk. Dark: the room under a brass reading lamp.",
+         fonts: "Courier Prime (headings and numbers) · Spectral (text)" },
+    c: { name: "C · Parish office, 1849", feels: "Feels like the priest's desk in 1849, where families chose their names.",
+         why: "Rag paper, iron-gall ink and a sealing-wax red, the foreword ruled like a register with a red margin. IM Fell is an old letterpress face, older than the book. Closest to today's look. Dark: the desk by candlelight.",
+         fonts: "IM Fell English SC (headings) · IM Fell English (text) · EB Garamond (numbers)" },
+  },
+};
+// Token pairs to check on each direction: [text token, background token, minimum ratio].
+const PAIRS = [
+  ["--ink", "--bg", 4.5], ["--muted", "--bg", 4.5], ["--muted", "--surface", 4.5], ["--accent-ink", "--surface", 4.5],
+  ["--on-accent", "--accent-ink", 4.5], ["--hero-fg", "--hero-bg", 4.5], ["--hero-muted", "--hero-bg", 4.5], ["--hero-accent", "--hero-bg", 3],
+];
+const SWATCHES = ["--bg", "--surface", "--ink", "--muted", "--accent", "--accent-ink", "--hero-bg", "--hero-accent"];
+
+// ---------- Rendering ----------
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+for (const el of document.querySelectorAll(".dir")) {
+  const d = CONTENT.directions[el.dataset.key], r = CONTENT.row;
+  el.innerHTML = `
+    <div><p class="label">${esc(d.name)}</p><h2>${esc(d.feels)}</h2></div>
+    <p class="why">${esc(d.why)}</p>
+    <div class="stagewrap"><div class="stage">
+      <div class="story">${PLACARDS.map((c, i) => `<article class="placard${i ? "" : " on"}"><p class="k">${esc(c.k)}</p><h3>${esc(c.h)}</h3>
+        ${c.count ? `<span class="count" data-to="${c.count}">0</span>` : ""}<p>${esc(c.p)}</p><p class="src">${esc(c.src)}</p></article>`).join("")}</div>
+      <div class="book"><img src="${COVER}" width="520" height="763" alt="The 1973 reprint's cover"></div>
+    </div></div>
+    <div class="row">
+      <div class="box"><b>${esc(r.box)}</b><small>${esc(r.unit)}</small></div>
+      <div><p class="name">${esc(r.name)}</p><p class="sub">${esc(r.sub)} · <em>${esc(r.flag)}</em></p></div>
+    </div>
+    <div class="actions"><button class="btn primary" type="button">${esc(CONTENT.primary)}</button><button class="btn" type="button">${esc(CONTENT.secondary)}</button></div>
+    <div class="type">
+      <p>Body text reads like this: plain, specific sentences, as on the placards.</p>
+      <p class="sample-num">p. 58 of 141 · 21 Nov 1849 · 0123456789</p>
+      <p class="fonts">${esc(d.fonts)}</p>
+    </div>
+    <div class="swatches">${SWATCHES.map((t) => `<div class="sw"><i style="background:var(${t})"></i><span>${t.slice(2)}</span></div>`).join("")}</div>
+    <ul class="checks" aria-label="Contrast checks"></ul>`;
+  // The placard across the middle of the scroll is lit; the rest wait faintly.
+  const story = el.querySelector(".story");
+  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting)
+    story.querySelectorAll(".placard").forEach((p) => p.classList.toggle("on", p === e.target)); },
+    { root: story, rootMargin: "-40% 0px -50% 0px" });
+  story.querySelectorAll(".placard").forEach((p) => io.observe(p));
+}
+
+// The 60,000 counter counts up, again every few seconds, to show whether the digits stay still (tabular figures).
+const fmt = (n) => n.toLocaleString("en-US");
+const run = () => document.querySelectorAll(".count").forEach((c) => {
+  const to = +c.dataset.to, t0 = performance.now();
+  const step = (t) => { const k = Math.min(1, (t - t0) / 1800); c.textContent = fmt(Math.round(to * (1 - (1 - k) ** 3))); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+});
+run(); setInterval(run, 6000);
+
+// Contrast ratios for each direction's token pairs, in the current theme.
+const cv = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+const rgb = (s) => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = "#000"; cv.fillStyle = s; cv.fillRect(0, 0, 1, 1); return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
+const lum = (c) => c.reduce((a, v, i) => { v /= 255; v = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; return a + v * [0.2126, 0.7152, 0.0722][i]; }, 0);
+const ratio = (a, b) => { const x = lum(rgb(a)), y = lum(rgb(b)); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const checkAll = () => {
+  for (const el of document.querySelectorAll(".dir")) {
+    const cs = getComputedStyle(el), get = (t) => cs.getPropertyValue(t).trim();
+    el.querySelector(".checks").innerHTML = PAIRS.map(([fg, bg, min]) => {
+      const r = ratio(get(fg), get(bg)), ok = r >= min;
+      return `<li class="${ok ? "" : "fail"}">${fg.slice(2)} on ${bg.slice(2)}: ${r.toFixed(1)}:1 ${ok ? "pass" : "FAIL (needs " + min + ")"}</li>`;
+    }).join("");
+  }
+};
+
+// Theme: light, dark, or follow the device. Saved per browser if storage is available.
+const mq = matchMedia("(prefers-color-scheme: dark)");
+let mode = "system"; try { mode = localStorage.getItem("directions-theme") || "system"; } catch (e) {}
+const apply = () => {
+  document.documentElement.dataset.theme = mode === "system" ? (mq.matches ? "dark" : "light") : mode;
+  document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.set === mode)));
+  checkAll();
+};
+document.querySelectorAll("[data-set]").forEach((b) => b.addEventListener("click", () => {
+  mode = b.dataset.set; try { localStorage.setItem("directions-theme", mode); } catch (e) {} apply();
+}));
+mq.addEventListener("change", () => { if (mode === "system") apply(); });
+apply();
+</script>
+</body>
+</html>

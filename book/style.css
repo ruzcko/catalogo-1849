@@ -1,291 +1,342 @@
-/* IM Fell, by Igino Marini (SIL OFL, fonts/OFL-IM-Fell.txt): the TTFs in fonts/, cut to Latin-1 as WOFF2. */
+/* IM Fell, by Igino Marini (SIL OFL, fonts/OFL-IM-Fell.txt): the TTFs in fonts/, cut to Latin-1 as WOFF2.
+   EB Garamond (SIL OFL, fonts/OFL-EB-Garamond.txt), for numbers: tabular lining figures that don't jump. */
 @font-face { font-family: "IM Fell English"; src: url("/fonts/IMFeENrm28P.woff2") format("woff2"); font-display: swap; }
 @font-face { font-family: "IM Fell English"; font-style: italic; src: url("/fonts/IMFeENit28P.woff2") format("woff2"); font-display: swap; }
 @font-face { font-family: "IM Fell English SC"; src: url("/fonts/IMFeENsc28P.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "EB Garamond"; font-weight: 400 600; src: url("/fonts/EBGaramond-latin.woff2") format("woff2"); font-display: swap; }
 
-/* A warm, old room: a plain wall with a pool of light where the book lies. Light is the house lights up,
-   dark is one lamp over the book. */
+/* The museum wing (DESIGN.md): the book is the exhibit in a gallery with garnet walls and a gilt frame; the chrome
+   (bars, panels, dialogs) is plaster. The wall stays garnet in both themes: dark is the same room after hours. */
 :root {
-  --bg: #f1eee8;
-  --grain: .05;
-  --pool: rgba(255, 255, 255, .55);
-  --fade: rgba(60, 45, 30, .07);
-  --bar: rgba(241, 238, 232, .86);
-  --panel: #fbf9f5;
-  --ink: #2a2017;
-  --muted: #6e604b;
-  --accent: #8c5f12;
-  --line: rgba(42, 32, 23, .16);
-  --tint: rgba(42, 32, 23, .06);
-  --toast: #2a2017;
-  --toast-ink: #f3ead6;
-  --on-accent: #fff;
-  --warn: #a4500f;
-  --s3: #7a5a14; --s3b: #c4a35e; --s4: #a4500f; --s4b: #e0995a;
-  --placard: "IM Fell English", Georgia, serif;
+  --text: "IM Fell English", Georgia, serif;
+  --display: "IM Fell English SC", Georgia, serif;
+  --num: "EB Garamond", Georgia, serif;
+  --placard: var(--text);
+  --wall: #5e1c1f;
+  --wall-ink: #f6efe8;
+  --wall-muted: #dcc3bd;
+  --gilt: #e9c27a;
+  --plinth: #cfd3d1;
+  --pool: rgba(233, 194, 122, .2);
+  --fade: rgba(20, 6, 7, .28);
+  --grain: .06;
+  --bg: #dcdfdd;
+  --surface: #eceeed;
+  --surface-2: #cfd3d1;
+  --panel: var(--surface);
+  --bar: rgba(236, 238, 237, .92);
+  --ink: #1c1a1a;
+  --muted: #4f4b4a;
+  --line: #b9bdbb;
+  --tint: rgba(28, 26, 26, .06);
+  --tint-2: rgba(28, 26, 26, .11);
+  --accent: #8e2a2c;
+  --accent-ink: #7a2224;
+  --on-accent: #ffffff;
+  --focus: #7a2224;
+  --toast: #1c1a1a;
+  --toast-ink: #eceeed;
+  --scrim: rgba(20, 6, 7, .45);
+  --warn: #9a4310;
+  --vote: rgba(233, 194, 122, .35);
+  --scan-paper: #ffffff;
+  --mark: #c2410c;
+  --s3: #6e5112; --s3b: #b8975a; --s4: #9a4310; --s4b: #d98c4f;
+  --sh1: rgba(70, 140, 95, .45); --sh2: rgba(70, 115, 175, .45); --sh3: rgba(214, 165, 45, .55); --sh3b: rgba(120, 80, 30, .8); --sh4: rgba(232, 120, 40, .6);
   color-scheme: light;
 }
 /* Dark: the device's setting, unless the reader picked one (data-theme, set before the page paints). */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #1d1712;
+  --wall: #3a1214;
+  --wall-ink: #f6efe8;
+  --wall-muted: #d5b6b0;
+  --plinth: #4a4344;
+  --pool: rgba(233, 194, 122, .13);
+  --fade: rgba(0, 0, 0, .4);
   --grain: .08;
-  --pool: rgba(150, 110, 60, .2);
-  --fade: rgba(0, 0, 0, .45);
-  --bar: rgba(29, 23, 18, .84);
-  --panel: #2a221b;
-  --ink: #f3ead6;
-  --muted: #b9a98c;
-  --accent: #d9b45a;
-  --on-accent: #21180f;
-  --line: rgba(243, 234, 214, .18);
-  --tint: rgba(255, 255, 255, .07);
-  --toast: #f3ead6;
-  --toast-ink: #2a2017;
+  --bg: #151314;
+  --surface: #1f1c1d;
+  --surface-2: #2a2627;
+  --bar: rgba(31, 28, 29, .92);
+  --ink: #ece8e6;
+  --muted: #b3aba8;
+  --line: #3a3536;
+  --tint: rgba(255, 255, 255, .06);
+  --tint-2: rgba(255, 255, 255, .11);
+  --accent: #c8585a;
+  --accent-ink: #e07a7b;
+  --on-accent: #151314;
+  --focus: #e9c27a;
+  --toast: #ece8e6;
+  --toast-ink: #151314;
+  --scrim: rgba(0, 0, 0, .55);
   --warn: #f0a35a;
+  --vote: rgba(233, 194, 122, .22);
   --s3: #e8c37a; --s3b: #8a6b32; --s4: #f0a35a; --s4b: #9a5a22;
   color-scheme: dark;
 } }
 :root[data-theme="dark"] {
-  --bg: #1d1712;
+  --wall: #3a1214;
+  --wall-ink: #f6efe8;
+  --wall-muted: #d5b6b0;
+  --plinth: #4a4344;
+  --pool: rgba(233, 194, 122, .13);
+  --fade: rgba(0, 0, 0, .4);
   --grain: .08;
-  --pool: rgba(150, 110, 60, .2);
-  --fade: rgba(0, 0, 0, .45);
-  --bar: rgba(29, 23, 18, .84);
-  --panel: #2a221b;
-  --ink: #f3ead6;
-  --muted: #b9a98c;
-  --accent: #d9b45a;
-  --on-accent: #21180f;
-  --line: rgba(243, 234, 214, .18);
-  --tint: rgba(255, 255, 255, .07);
-  --toast: #f3ead6;
-  --toast-ink: #2a2017;
+  --bg: #151314;
+  --surface: #1f1c1d;
+  --surface-2: #2a2627;
+  --bar: rgba(31, 28, 29, .92);
+  --ink: #ece8e6;
+  --muted: #b3aba8;
+  --line: #3a3536;
+  --tint: rgba(255, 255, 255, .06);
+  --tint-2: rgba(255, 255, 255, .11);
+  --accent: #c8585a;
+  --accent-ink: #e07a7b;
+  --on-accent: #151314;
+  --focus: #e9c27a;
+  --toast: #ece8e6;
+  --toast-ink: #151314;
+  --scrim: rgba(0, 0, 0, .55);
   --warn: #f0a35a;
+  --vote: rgba(233, 194, 122, .22);
   --s3: #e8c37a; --s3b: #8a6b32; --s4: #f0a35a; --s4b: #9a5a22;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; color: var(--ink); overflow: hidden; }
-/* The wall: one surface, dimming towards its top and bottom edges (where the bars sit, unboxed), lit where the
-   book lies. */
-body { background: linear-gradient(var(--fade), transparent 130px), linear-gradient(to top, var(--fade), transparent 130px),
-  radial-gradient(ellipse 60% 55% at 62% 46%, var(--pool), transparent 70%), var(--bg); }
-/* A faint grain on the wall, so it reads as plaster rather than a flat colour. */
+/* The wall: garnet, dimming towards its top and bottom edges, with a pool of warm light where the book stands. */
+body { background: linear-gradient(var(--fade), transparent 140px), linear-gradient(to top, var(--fade), transparent 140px),
+  radial-gradient(ellipse 55% 55% at 62% 46%, var(--pool), transparent 70%), var(--wall); }
+/* A faint grain on the wall, so it reads as painted plaster rather than a flat colour. */
 body::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: var(--grain);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
-html, body {
-  font: 16px/1.45 "IM Fell English", Georgia, serif; -webkit-tap-highlight-color: transparent; }
+/* The gilt frame round the room: a broad gold rule and a fine one inside it. */
+body::after { content: ""; position: fixed; inset: 6px; z-index: 1; pointer-events: none; border: 3px solid var(--gilt);
+  outline: 1px solid var(--gilt); outline-offset: -8px; opacity: .85; }
+html, body { font: 16px/1.45 var(--text); -webkit-tap-highlight-color: transparent; }
+b, strong { font-family: var(--display); font-weight: 400; letter-spacing: .02em; }   /* IM Fell has no bold: small caps instead */
 #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
 #stage.dragging { cursor: grabbing; }
+.icon svg, .x svg, .storyx svg { display: block; width: 22px; height: 22px; }
 
-/* The bars are part of the wall: the room dims towards its top and bottom edges, nothing is boxed. */
-.bar { position: fixed; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 12px 16px; z-index: 2; }
-.bar.top { top: 0; padding-top: max(12px, env(safe-area-inset-top)); }
-.bar.bottom { bottom: 0; justify-content: center; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+/* The bars: plaster over the wall, blurred, so the controls read on the garnet. */
+.bar { position: fixed; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 8px 16px; z-index: 2;
+  background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.bar.top { top: 0; padding-top: max(8px, env(safe-area-inset-top)); border-bottom: 1px solid var(--line); }
+.bar.bottom { bottom: 0; justify-content: center; padding-bottom: max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 .title { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
-.title b { font-family: "IM Fell English SC", Georgia, serif; font-weight: 400; font-size: 17px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; }
-.title span { color: var(--muted); font-size: 13px; }
-.search { position: relative; margin-left: auto; flex: 0 1 240px; min-width: 0; }
-.search input { width: 100%; font: inherit; color: var(--ink); background: var(--panel);
-  border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; outline: none; }
-.search input:focus { border-color: var(--accent); }
-#hits { position: absolute; right: 0; top: calc(100% + 6px); width: min(280px, 80vw); margin: 0; padding: 4px;
-  list-style: none; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; max-height: 50vh; overflow: auto; }
-#hits li { padding: 7px 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; }
-#hits li[aria-selected="true"], #hits li:hover { background: rgba(140, 95, 18, .12); }
-#hits li small { color: var(--muted); }
+.title b { font-family: var(--display); font-weight: 400; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title span { color: var(--muted); font-size: 14px; font-family: var(--num); font-variant-numeric: lining-nums; }
+.search { position: relative; margin-left: auto; flex: 0 1 260px; min-width: 0; }
+.search input { width: 100%; min-height: 44px; font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 2px; padding: 8px 12px; outline: none; }
+.search input::placeholder { color: var(--muted); }
+.search input:focus { border-color: var(--accent-ink); }
+#hits { position: absolute; right: 0; top: calc(100% + 6px); width: min(300px, 80vw); margin: 0; padding: 4px;
+  list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; max-height: 50vh; overflow: auto; }
+#hits li { min-height: 44px; padding: 10px 12px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#hits li[aria-selected="true"], #hits li:hover { background: var(--tint-2); }
+#hits li small { color: var(--muted); font-family: var(--num); font-variant-numeric: tabular-nums lining-nums; }
 #hits li.none { color: var(--muted); cursor: default; }
 button { font: inherit; color: var(--ink); background: none; border: 0; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.icon { width: 40px; height: 40px; border-radius: 50%; font-size: 24px; line-height: 1; flex: none;
-  display: grid; place-items: center; background: var(--tint); }
-.icon:hover { background: rgba(42, 32, 23, .12); }
-.icon:disabled { opacity: .3; cursor: default; }
-#info { font-size: 18px; }
-.layout { white-space: nowrap; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
-.layout[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
-.where { min-width: 150px; padding: 6px 14px; border-radius: 999px; background: var(--tint); font-size: 15px; }
-.toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-  background: var(--toast); color: var(--toast-ink); border: 1px solid var(--line); padding: 8px 16px; border-radius: 999px; z-index: 3;
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.icon { width: 44px; height: 44px; border-radius: 2px; line-height: 1; flex: none; display: grid; place-items: center;
+  color: var(--ink); background: var(--tint); }
+.icon:hover { background: var(--tint-2); }
+.icon:disabled { opacity: .35; cursor: default; }
+.layout { white-space: nowrap; min-height: 44px; padding: 0 14px; border-radius: 2px; border: 1px solid var(--line); font-size: 16px; color: var(--ink); }
+.layout[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
+.where { min-width: 150px; min-height: 44px; padding: 0 14px; border-radius: 2px; background: var(--tint); font-size: 16px; }
+.where .n, .n { font-family: var(--num); font-variant-numeric: tabular-nums lining-nums; }
+.toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--toast); color: var(--toast-ink); padding: 10px 18px; border-radius: 2px; z-index: 3;
   max-width: calc(100vw - 32px); text-align: center; }
 /* A museum label for a part of the shut book, by the tap */
-.label { position: fixed; z-index: 3; max-width: min(300px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 10px;
+.label { position: fixed; z-index: 3; max-width: min(300px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 2px;
   background: var(--toast); color: var(--toast-ink); font-size: 14px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-dialog { max-width: min(520px, calc(100vw - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line);
-  border-radius: 16px; padding: 22px 24px; }
-dialog::backdrop { background: rgba(42, 32, 23, .35); }
-dialog h2 { font-family: "IM Fell English SC", Georgia, serif; font-weight: 400; margin: 0 0 8px; }
-dialog a { color: var(--accent); }
+dialog { max-width: min(520px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 2px; padding: 22px 24px; }
+dialog::backdrop { background: var(--scrim); }
+dialog h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0 0 8px; }
+dialog a { color: var(--accent-ink); }
 dialog .small { color: var(--muted); font-size: 14px; }
-dialog form button { margin-top: 6px; padding: 6px 18px; border-radius: 999px; border: 1px solid var(--line); }
+dialog form button { margin-top: 6px; min-height: 44px; padding: 0 18px; border-radius: 2px; border: 1px solid var(--line); }
+.x { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 2px; color: var(--muted); }
+.x:hover { background: var(--tint); color: var(--ink); }
 @media (max-width: 560px) {
   .bar.bottom { gap: 6px; padding-left: 8px; padding-right: 8px; }
-  .bar.bottom .icon { width: 36px; height: 36px; }
-  .layout { padding: 6px 9px; font-size: 13px; }
-  .title b { font-size: 15px; white-space: normal; line-height: 1.08; }   /* the title in full, on two lines */
-  .bar.top { gap: 8px; }
-  .bar.top .icon { width: 36px; height: 36px; }
+  .layout { padding: 0 10px; font-size: 15px; }
+  .title b { font-size: 16px; white-space: normal; line-height: 1.08; }   /* the title in full, on two lines */
+  .bar.top { gap: 6px; }
   /* Search is an icon, so the title shows in full; tapping it opens the box across the bar. */
   .bar.top #searchbtn { display: grid; margin-left: auto; }
   .bar.top .search { display: none; }
   .bar.top.searching .search { display: block; flex: 1 1 auto; }
   .bar.top.searching .title, .bar.top.searching #searchbtn { display: none; }
-  .where { min-width: 120px; }
+  .where { min-width: 112px; }
 }
 
 /* Missing-page help */
-.help { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 2;
+.help { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 2;
   width: min(560px, calc(100vw - 32px)); display: flex; align-items: center; gap: 14px; padding: 12px 16px;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
 .help p { margin: 0; font-size: 15px; line-height: 1.35; }
 .help .primary { flex: none; }
-.primary { display: inline-block; padding: 8px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent) !important;
-  text-decoration: none; font-weight: 700; border: 0; cursor: pointer; font: inherit; }
+.primary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 2px;
+  background: var(--accent-ink); color: var(--on-accent) !important; text-decoration: none; border: 0; cursor: pointer; font: inherit; }
 @media (max-width: 560px) { .help { flex-direction: column; align-items: stretch; text-align: center; } }
 
 /* The names as text, for keyboards and screen readers: the first thing Tab reaches */
-.skip { position: fixed; top: 8px; left: 8px; z-index: 5; padding: 8px 16px; border-radius: 999px; background: var(--accent);
+.skip { position: fixed; top: 8px; left: 8px; z-index: 5; min-height: 44px; padding: 0 16px; border-radius: 2px; background: var(--accent-ink);
   color: var(--on-accent); transform: translateY(-200%); }
 .skip:focus { transform: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .list { width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: auto; }
 .list .eh { display: flex; align-items: center; gap: 10px; }
-.list .x { margin-left: auto; font-size: 18px; color: var(--muted); }
-.list h3 { font-weight: 400; color: var(--muted); margin: 14px 0 4px; }
+.list .x { margin-left: auto; }
+.list h3 { font-weight: 400; font-family: var(--display); color: var(--muted); margin: 14px 0 4px; }
 .list ol { columns: 3 9em; margin: 0; padding: 0; list-style: none; font-size: 17px; }
-.list li button { padding: 0; color: var(--accent); text-decoration: underline; text-align: left; }
+.list li button { display: block; width: 100%; min-height: 44px; padding: 0; color: var(--accent-ink); text-decoration: underline; text-align: left; }
 
 /* Reading help */
 .entry { width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow: auto; }
 .entry .eh { display: flex; align-items: center; gap: 10px; }
-.entry h2 { margin: 0; font-family: "IM Fell English", Georgia, serif; font-size: 30px; }
-.entry .x { margin-left: auto; font-size: 18px; color: var(--muted); }
-.chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.entry h2 { margin: 0; font-family: var(--text); font-size: 30px; }
+.entry .x { margin-left: auto; }
+.chip { font-size: 14px; padding: 2px 10px; border-radius: 2px; border: 1px solid var(--line); color: var(--muted); }
 .chip.s3 { color: var(--s3); border-color: var(--s3b); }
 .chip.s4 { color: var(--s4); border-color: var(--s4b); }
 .entry .why { color: var(--muted); margin: 8px 0 12px; font-size: 15px; }
 .entry .crop { margin: 0 0 12px; }
-.entry .crop .img { position: relative; max-width: 100%; border-radius: 6px; background-color: #fff; background-repeat: no-repeat; }
-.entry .crop .mark { position: absolute; left: 0; border: 2px solid #e0932f; border-radius: 4px; box-sizing: border-box; }
-.entry .crop .around { color: var(--accent); text-decoration: underline; font-size: 12px; padding: 0; }
+.entry .crop .img { position: relative; max-width: 100%; border-radius: 2px; background-color: var(--scan-paper); background-repeat: no-repeat; }
+.entry .crop .mark { position: absolute; left: 0; border: 2px solid var(--mark); border-radius: 2px; box-sizing: border-box; }
+.entry .crop .around { min-height: 44px; color: var(--accent-ink); text-decoration: underline; font-size: 14px; padding: 0; }
 .entry .order { margin: 0 0 10px; }
-.entry .crop figcaption { color: var(--muted); font-size: 12px; margin-top: 4px; }
-.entry .q { margin: 8px 0 6px; font-weight: 700; }
+.entry .crop figcaption { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.entry .q { margin: 8px 0 6px; font-family: var(--display); }
 .entry .opts { display: grid; gap: 4px; margin-bottom: 8px; }
-.entry .opts label { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(42, 32, 23, .05); cursor: pointer; font-size: 18px; }
-.entry .opts small, .entry .bar small { color: var(--muted); font-size: 12px; }
+.entry .opts label { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 10px; border-radius: 2px; background: var(--tint); cursor: pointer; font-size: 18px; }
+.entry .opts small, .entry .bar small { color: var(--muted); font-size: 13px; }
 .entry .own { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); }
-.entry .own input { flex: 1; min-width: 0; font: inherit; font-size: 17px; color: var(--ink); background: rgba(42, 32, 23, .08);
-  border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+.entry .own input { flex: 1; min-width: 0; min-height: 44px; font: inherit; font-size: 17px; color: var(--ink); background: var(--tint);
+  border: 1px solid var(--line); border-radius: 2px; padding: 6px 10px; }
+.entry .own input::placeholder { color: var(--muted); }
 .entry .err { color: var(--warn); min-height: 1.2em; margin: 6px 0; font-size: 14px; }
 .entry .ts { margin: 6px 0; }
 .entry .acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.entry .notsure { color: var(--muted); text-decoration: underline; font-size: 14px; }
+.entry .notsure { min-height: 44px; color: var(--muted); text-decoration: underline; font-size: 15px; }
 .entry .bar { position: relative; display: flex; justify-content: space-between; padding: 6px 10px; margin: 4px 0;
-  border-radius: 10px; background: rgba(42, 32, 23, .05); overflow: hidden; font-size: 17px; }
-.entry .bar i { position: absolute; inset: 0 auto 0 0; background: rgba(217,180,90,.22); }
+  border-radius: 2px; background: var(--tint); overflow: hidden; font-size: 17px; backdrop-filter: none; border: 0; z-index: auto; }
+.entry .bar i { position: absolute; inset: 0 auto 0 0; background: var(--vote); }
 .entry .bar span, .entry .bar b { position: relative; }
-.entry .bar.me { outline: 1px solid var(--accent); }
-.entry .small { color: var(--muted); font-size: 13px; }
-.entry .askfriend { color: var(--accent); text-decoration: underline; padding: 0; font-size: 14px; }
+.entry .bar b { font-family: var(--num); font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+.entry .bar.me { outline: 1px solid var(--accent-ink); }
+.entry .small { color: var(--muted); font-size: 14px; }
+.entry .askfriend { min-height: 44px; color: var(--accent-ink); text-decoration: underline; padding: 0; font-size: 15px; }
 
-/* The foreword: museum placards beside the book on a wide screen, below it on a phone. A tab on the left edge opens
-   it. Its top and bottom follow the bars and the book (set from book.js). */
+/* The foreword: wall text beside the book on a wide screen, below it on a phone. A tab on the left edge opens it.
+   Its top and bottom follow the bars and the book (set from book.js). */
 .storytab { position: fixed; left: 0; top: 50%; z-index: 2; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl;
-  padding: 16px 8px; border-radius: 10px 0 0 10px; border: 1px solid var(--line); border-right: 0; background: var(--panel);
-  font-family: "IM Fell English SC", Georgia, serif; font-size: 16px; letter-spacing: .06em; color: var(--muted); }
-.storytab:hover { color: var(--accent); }
+  min-width: 44px; padding: 16px 10px; border-radius: 2px 0 0 2px; border: 1px solid var(--line); border-right: 0; background: var(--surface);
+  font-family: var(--display); font-size: 16px; letter-spacing: .06em; color: var(--ink); }
+.storytab:hover { color: var(--accent-ink); }
 .storytab[aria-expanded="true"] { display: none; }
 /* Wall text: one placard fills the panel at a time and snaps into place; the one being read is lit, the rest wait. */
 .story { position: fixed; left: 0; top: 60px; bottom: 60px; z-index: 2; width: min(540px, 40vw); overflow-y: auto; overscroll-behavior: contain;
-  padding: 0 40px 0 64px; scrollbar-width: none; scroll-snap-type: y proximity; font-family: var(--placard);
+  padding: 0 40px 0 72px; scrollbar-width: none; scroll-snap-type: y proximity; font-family: var(--placard); color: var(--wall-ink);
   transition: transform .6s ease, opacity .6s ease, visibility 0s;
   -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 90%, transparent); }
 .story::-webkit-scrollbar { display: none; }
 .story.out { transform: translateX(-30px); opacity: 0; visibility: hidden; transition: transform .5s ease, opacity .5s ease, visibility 0s .5s; }
-.storyx { position: fixed; left: 18px; top: 72px; z-index: 3; width: 36px; height: 36px; border-radius: 50%; font-size: 17px; color: var(--muted); }
-.storyx:hover { background: var(--tint); color: var(--ink); }
-/* Progress: a dot for each placard, down the left margin (across the top of the panel on a phone). */
-.dots { position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; gap: 12px; }
-.dots button { width: 22px; height: 22px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
-.dots button::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .45; transition: transform .3s, opacity .3s; }
+.storyx { position: fixed; left: 22px; top: 72px; z-index: 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 2px; color: var(--wall-ink); }
+.storyx:hover { background: var(--tint-2); }
+/* Progress: a mark for each placard, down the left margin (across the top of the panel on a phone). */
+.dots { position: fixed; left: 22px; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; gap: 0; }
+.dots button { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; }
+.dots button::before { content: ""; width: 8px; height: 8px; background: var(--wall-muted); opacity: .5; transform: rotate(45deg); transition: transform .3s, opacity .3s; }
 .dots button:hover::before { opacity: .9; }
-.dots button[aria-current="true"]::before { background: var(--accent); opacity: 1; transform: scale(1.5); }
-.dots.below { left: 20px; top: auto; transform: none; flex-direction: row; gap: 4px; }
-.story .skipto { position: sticky; top: 10px; z-index: 1; display: block; margin: 0 0 -30px auto; width: max-content; font: inherit; font-size: 13px;
-  color: var(--muted); text-decoration: underline; text-underline-offset: .2em; padding: 4px 12px; border-radius: 999px;
-  background: var(--bar); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.story .skipto:hover { color: var(--accent); }
-.story .slide { min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 56px 0 40px;
-  scroll-snap-align: start; opacity: .25; transition: opacity .6s ease; }
+.dots button[aria-current="true"]::before { background: var(--gilt); opacity: 1; transform: rotate(45deg) scale(1.4); }
+.dots.below { left: 6px; top: auto; transform: none; flex-direction: row; }
+.dots.below button { width: 44px; height: 44px; }
+.story .skipto { position: sticky; top: 10px; z-index: 1; display: flex; align-items: center; margin: 0 0 -44px auto; width: max-content; min-height: 44px;
+  font: inherit; font-size: 15px; color: var(--ink); padding: 0 14px; border-radius: 2px; background: var(--bar); border: 1px solid var(--line);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.story .skipto:hover { color: var(--accent-ink); }
+.story .slide { min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 64px 0 40px;
+  scroll-snap-align: start; opacity: .4; transition: opacity .6s ease; }
 .story .slide.on { opacity: 1; }
-.story .kicker { font-family: "IM Fell English SC", Georgia, serif; color: var(--accent); letter-spacing: .1em; margin: 0 0 12px; font-size: 15px; }
-.story .num { display: inline-block; min-width: 1.6em; margin-right: .4em; padding: 1px 0; border: 1px solid var(--accent); border-radius: 999px;
-  text-align: center; font-size: 13px; line-height: 1.3; }
-.story h2 { font-weight: 400; font-size: 36px; line-height: 1.12; margin: 0 0 14px; }
-.story h2.title { font-size: 40px; font-style: italic; }
-.story .line { font-size: 18px; line-height: 1.55; margin: 0 0 14px; }
-.story .src { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 12px 0 0; }
-.story .src a { color: var(--muted); }
-.story .hint { color: var(--muted); font-style: italic; font-size: 14px; margin: 18px 0 0; }
+.story .kicker { font-family: var(--display); color: var(--wall-muted); letter-spacing: .08em; margin: 0 0 12px; font-size: 15px; }
+.story .slide.on .kicker { color: var(--gilt); }
+.story .num { font-family: var(--num); font-variant-numeric: lining-nums; margin-right: .5em; }
+.story h2 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3vw, 34px); line-height: 1.12; margin: 0 0 14px; }
+.story h2.title { font-size: clamp(30px, 3.4vw, 40px); }
+.story .line { font-size: 19px; line-height: 1.55; margin: 0 0 14px; }
+.story .src { color: var(--wall-muted); font-size: 14px; line-height: 1.4; margin: 12px 0 0; }
+.story .src a { color: var(--wall-muted); }
+.story .hint { color: var(--wall-muted); font-size: 15px; margin: 18px 0 0; }
 .story .plate { margin: 0 0 18px; }
-.story .plate img { display: block; height: 170px; width: auto; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-.story .plate.scan .img { width: min(100%, 300px); aspect-ratio: 4 / 3; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  background: #e9dfc9 url("https://apelyido.ruzcko.com/scan/pages/1/2.webp") 22% 16% / 330% auto no-repeat; }
-.story figcaption { color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 8px; max-width: 300px; }
+.story .plate img { display: block; height: 170px; width: auto; border-radius: 0; outline: 3px solid var(--gilt); outline-offset: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.story .plate.scan .img { width: min(100%, 300px); aspect-ratio: 4 / 3; border-radius: 0; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  background: var(--scan-paper) url("https://apelyido.ruzcko.com/scan/pages/1/2.webp") 22% 16% / 330% auto no-repeat; }
+.story figcaption { color: var(--wall-muted); font-size: 13px; line-height: 1.4; margin-top: 10px; max-width: 300px; }
 .story .doors { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 16px; }
-.story .doors .open { font-size: 16px; padding: 10px 20px; }
-.story .door { font-size: 15px; color: var(--ink); padding: 9px 18px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
-.story .door:hover { border-color: var(--accent); color: var(--accent); }
+.story .doors .open { font-size: 17px; padding: 0 22px; }
+.story .door { display: inline-flex; align-items: center; min-height: 44px; font-size: 16px; color: var(--ink); padding: 0 18px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 2px; text-decoration: none; }
+.story .door:hover { color: var(--accent-ink); }
 @media (max-width: 759px) {   /* on a phone, the book above and the placards below, on the wall's own colour */
-  .story.below { width: auto; right: 0; padding: 0 22px 0 24px; background: linear-gradient(transparent, var(--bg) 12%);
+  .story.below { width: auto; right: 0; padding: 0 22px 0 24px; background: linear-gradient(transparent, var(--wall) 12%);
     -webkit-mask-image: none; mask-image: none; }
-  .story .slide { padding: 40px 0 32px; }
+  .story .slide { padding: 48px 0 32px; }
   .story h2 { font-size: 27px; }
   .story h2.title { font-size: 30px; }
-  .story .line { font-size: 16px; }
+  .story .line { font-size: 17px; }
   .story .plate img { height: 120px; }
   .story .plate.scan .img { width: min(100%, 220px); }
   .storyx { display: none; }   /* "Skip to the book" closes it there */
-  .storytab { padding: 12px 6px; font-size: 14px; }
+  .storytab { padding: 12px 8px; font-size: 15px; }
   body:not(.shut) .storytab { display: none; }   /* on a phone, the tab waits by the closed book; the ? has it too */
   body.foreword .bar.bottom { display: none; }    /* the book is shut while the foreword is open: no page controls */
 }
 @media (prefers-reduced-motion: reduce) { .story, .story.out { transition: none; } }
 
 #searchbtn { display: none; }
-#theme svg, #searchbtn svg { display: block; }
 
 /* The page label's panel: the book's letters, A to Z, and a page number. */
 .index { width: min(420px, calc(100vw - 24px)); }
 .index .eh, .views .eh { display: flex; align-items: center; gap: 10px; }
-.index .x, .views .x { margin-left: auto; font-size: 18px; color: var(--muted); }
-.index .letters { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; margin: 10px 0 14px; }
-.index .letters button { padding: 8px 0; border-radius: 10px; background: var(--tint); font-family: "IM Fell English SC", Georgia, serif; font-size: 20px; }
-.index .letters button[aria-current="true"] { outline: 2px solid var(--accent); }
+.index .x, .views .x { margin-left: auto; }
+.index .letters { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; margin: 10px 0 14px; }
+.index .letters button { min-height: 48px; padding: 0; border-radius: 2px; background: var(--tint); font-family: var(--display); font-size: 21px; }
+.index .letters button[aria-current="true"] { outline: 2px solid var(--accent-ink); }
 .index .goto { display: flex; gap: 8px; align-items: center; }
 .index .goto label { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; color: var(--muted); }
 .index .goto button { flex: none; }
-.index .goto input { flex: 1; min-width: 0; font: inherit; font-size: 17px; color: var(--ink); background: var(--tint);
-  border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+.index .goto input { flex: 1; min-width: 0; min-height: 44px; font: inherit; font-size: 17px; color: var(--ink); background: var(--tint);
+  border: 1px solid var(--line); border-radius: 2px; padding: 6px 10px; }
+.index .goto input::placeholder { color: var(--muted); }
 
 /* The View panel: four ways to see a page, each with an (i) that says what it is. */
 .views { width: min(440px, calc(100vw - 24px)); }
-.views .vopt { border-top: 1px solid var(--line); padding: 8px 0; }
+.views .vopt { border-top: 1px solid var(--line); padding: 4px 0; }
 .views .vrow { display: flex; align-items: center; gap: 10px; }
-.views .vrow label { display: flex; align-items: center; gap: 10px; flex: 1; font-size: 18px; cursor: pointer; }
-.views .i { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); color: var(--muted); font-style: italic; font-size: 15px; flex: none; }
-.views .i[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+.views .vrow label { display: flex; align-items: center; gap: 10px; flex: 1; min-height: 44px; font-size: 18px; cursor: pointer; }
+.views .i { position: relative; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); color: var(--muted); font-style: italic; font-size: 15px; flex: none; }
+.views .i::after { content: ""; position: absolute; inset: -10px; }   /* a 44 px tap area round the small (i) */
+.views .i[aria-expanded="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
 .views .vinfo { margin: 6px 0 2px 32px; color: var(--muted); font-size: 15px; }
 .views .legend { margin: 10px 0 0; line-height: 2; }
-.sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin: 0 2px 0 8px; }
-.sw.s1 { background: rgba(70, 140, 95, .45); }
-.sw.s2 { background: rgba(70, 115, 175, .45); }
-.sw.s3 { background: rgba(214, 165, 45, .55); outline: 1px dashed rgba(120, 80, 30, .8); }
-.sw.s4 { background: rgba(232, 120, 40, .6); }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 2px; vertical-align: -2px; margin: 0 2px 0 8px; }
+.sw.s1 { background: var(--sh1); }
+.sw.s2 { background: var(--sh2); }
+.sw.s3 { background: var(--sh3); outline: 1px dashed var(--sh3b); }
+.sw.s4 { background: var(--sh4); }
 
 /* A green name's question: does the scan agree with the OCR? */
 .entry .agree { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 10px; }
-.entry .agree .no { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); }
+.entry .agree .no { min-height: 44px; padding: 0 16px; border-radius: 2px; border: 1px solid var(--line); }
+/* Text-link buttons inside the entry's form stay links, not boxed buttons. */
+.entry .notsure, .entry .askfriend, .entry .crop .around { border: 0; margin-top: 0; padding: 0; }
