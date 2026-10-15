@@ -2,3 +2,5 @@
 *.png
 review/
 __pycache__/
+!book/img/*.jpg
+.claude/

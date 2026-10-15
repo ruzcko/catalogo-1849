@@ -27,6 +27,7 @@ This is the first open, searchable list of the book's names that we know of. It 
   - **Google Books**, from the **University of Michigan** library's copy: [Catálogo alfabético de apellidos](https://books.google.com/books?id=dEMvAAAAMAAJ), digitized by Google (about 4,400 pixels wide, all 141 pages).
   - The **Filipinas Heritage Library (Ayala Foundation)**: [Catálogo alfabético de apellidos on Issuu](https://issuu.com/filipinasheritagelibrary/docs/catalogo_alfabetico_de_apellidos) (910 pixels wide, 133 pages). Thank you for preserving this book and making it accessible.
   - **FamilySearch**'s microfilm of the reprint (catalogued TN-390531, filmed 2021): greyscale, about 1,500 pixels wide, all 141 pages. Used only for its text, as a third reading; its images aren't published.
+- **The virtual book's images:** the reprint's cover and Narciso Clavería's portrait (Museo del Prado), both public domain, via Wikimedia Commons (`book/img/`).
 - **Transcription:** all three scans read with [Surya](https://github.com/datalab-to/surya) OCR and with a recognizer trained on the book's own typeface ([Kraken](https://kraken.re)), combined line by line, corrected using the book's alphabetical order, checked against hand-typed pages, by [Apelyido](https://apelyido.ruzcko.com).
 
 ### How the scans are combined

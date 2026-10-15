@@ -48,7 +48,7 @@ const WHY = [
 const SCAN_W = 910, SCAN_H = 1498;              // the scanned page, in pixels: entry boxes use these
 const H = 1.5, W = H * SCAN_W / SCAN_H;          // a page in world units
 const TEX_W = 1280, TEX_H = Math.round(TEX_W * SCAN_H / SCAN_W), S = TEX_W / SCAN_W;
-const LEAF = 0.0016;                             // paper thickness, for the stacks
+const LEAF = 0.0007;                             // paper thickness, for the stacks (141 leaves: a paperback's spine)
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let PAGES = [];                                  // from data/pages.json: {n, scan, letter, first, last} or {n, missing}
@@ -64,55 +64,151 @@ const canvas = document.getElementById("stage");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });   // the room is the page's background
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;               // real shadows, unless the GPU probe at start turns them off (lite)
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+let lite = false;
 const scene = new THREE.Scene();
 renderer.setClearColor(0x000000, 0);
-const camera = new THREE.PerspectiveCamera(16, 1, 0.01, 80);   // a long lens: a lifted page doesn't loom
-// Unlit materials: the pages show their drawn colours exactly; the turning leaf is shaded in its shader.
+const camera = new THREE.PerspectiveCamera(22, 1, 0.1, 80);   // a long lens: a lifted page doesn't loom (near 0.1: depth precision for the page on its block)
 
-// A soft shadow under the book.
+// The light: one warm key over the reader's left shoulder, which casts the shadows, and the room's soft fill. The
+// pages and the boards are lit materials, so the gutter, the page block and a turning board shade as they move.
+const LIGHT = new THREE.Vector3(-1.5, 1.3, 3.4);
+const key = new THREE.DirectionalLight(0xfff2de, 2.3);
+key.position.copy(LIGHT);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -2.4, right: 2.4, top: 2, bottom: -2, near: 0.5, far: 10 });
+key.shadow.camera.updateProjectionMatrix();
+key.shadow.bias = -0.0006;
+key.shadow.normalBias = 0.012;
+scene.add(key, key.target);
+const fill = new THREE.HemisphereLight(0xfff5e6, 0x5a4a3a, 1.2);
+fill.position.set(0, 0, 1);                      // the pages face +z: that side gets the room's light
+scene.add(fill);
+const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, ...extra });
+
+// The desk takes the book's shadow and nothing else (the room's colour is the page's CSS). Under the book, a soft
+// contact shadow, the one thing a shadow map doesn't give.
+const desk = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.ShadowMaterial({ opacity: 0.38, transparent: true, depthWrite: false }));
+desk.position.z = -0.03;
+desk.receiveShadow = true;
+scene.add(desk);
 const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2 * W * 1.18, H * 1.12),
-  new THREE.MeshBasicMaterial({ map: radialShadow(), transparent: true, depthWrite: false }));
+  new THREE.MeshBasicMaterial({ map: radialShadow(), transparent: true, depthWrite: false, opacity: 0.7 }));
 shadow.position.z = -0.02;
 scene.add(shadow);
 
-// Solid shapes, unlit like the pages: each side its own shade (box faces: +x, -x, +y, -y, +z, -z), so the closed book
-// reads as a block when it's seen at an angle. The front edge (-y) faces the reader then.
-const shaded = (hex, sides) => sides.map(k => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) }));
-const paperEdge = shaded(0xd8c9a8, [0.84, 0.84, 0.7, 0.93, 1, 0.6]);
-const stackL = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
-const stackR = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1), paperEdge);
-scene.add(stackL, stackR);
-// The hard covers: two boards, a little larger than the pages, hinged at the spine (x = 0), each with the cover
-// outside, the endpaper inside and leather edges. The front board lies on the pages while the book is closed and
-// turns over to the left to open it; the back board lies under the pages and turns over them to close the book at
-// the end. While the book is closed, a rounded leather spine joins the two along the hinge.
-const BOARD = 0.014, OVER = 0.02, BW = W + OVER, BH = H + 2 * OVER;
-const leather = shaded(0x5a1d16, [0.7, 0.7, 0.6, 0.85, 1, 0.5]);
+// The book is one group, so the closed book can be turned over in the hand: `book` sits at the closed block's
+// centre and `inner` holds every part at the coordinates the rest of the code uses (the spine at x = 0).
+const book = new THREE.Group(), inner = new THREE.Group();
+book.rotation.order = "YXZ";
+book.add(inner);
+scene.add(book);
+
+// The page block: the leaves on each side of the spine, as a block whose top follows the pages down into the
+// gutter when the book is open (the leaves are glued at the spine). Its edges are the fanned paper, as fine lines.
+const paperTone = 0xe9dcbd;
+const LINE_SP = 2.2 * LEAF;                      // one line on the paper's edge for every two leaves or so
+function makeStack() {
+  const tex = new THREE.CanvasTexture(edgeLines());
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  const m = new THREE.Mesh(new THREE.BufferGeometry(), [std(paperTone), std(0xffffff, { map: tex })]);
+  m.castShadow = m.receiveShadow = true;
+  inner.add(m);
+  return m;
+}
+const stackL = makeStack(), stackR = makeStack();
+// The covers: the 1973 reprint is a paperback, so they are thin boards, flush with the pages, hinged at the spine
+// (x = 0). The front cover lies on the pages while the book is closed and turns over to the left to open it; the
+// back lies under the pages and turns over them to close the book at the end. Closed, a flat spine joins them.
+const BOARD = 0.006, OVER = 0.004, BW = W + OVER, BH = H + 2 * OVER;
+const boardTone = 0xcbb183;
 function makeCover(rises) {   // rises: the board sits on its hinge (the front), else hangs from it (the back)
   const geo = new THREE.BoxGeometry(BW, BH, BOARD);
   geo.translate(BW / 2, 0, rises ? BOARD / 2 : -BOARD / 2);
-  const mesh = new THREE.Mesh(geo, [...leather.slice(0, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), new THREE.MeshBasicMaterial({ color: 0xffffff })]);
-  scene.add(mesh);
+  const edge = std(boardTone, { roughness: 0.8 });
+  const mesh = new THREE.Mesh(geo, [edge, edge, edge, edge, std(0xffffff, { roughness: 0.78 }), std(0xffffff)]);
+  mesh.castShadow = mesh.receiveShadow = true;
+  inner.add(mesh);
   return mesh;
 }
 const coverF = makeCover(true), coverB = makeCover(false);
 const spineGeo = new THREE.CylinderGeometry(1, 1, BH, 24, 1, true, Math.PI, Math.PI);   // half a tube along y, bulging to -x
-{ // unlit, so shade it by hand: lighter where it faces up, darker round to the desk
-  const pos = spineGeo.attributes.position, col = [], base = new THREE.Color(0x5a1d16);
-  for (let i = 0; i < pos.count; i++) { const c = base.clone().multiplyScalar(0.55 + 0.4 * (0.5 + 0.5 * pos.getZ(i))); col.push(c.r, c.g, c.b); }
-  spineGeo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-}
-const spine = new THREE.Mesh(spineGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
-scene.add(spine);
+const spine = new THREE.Mesh(spineGeo, std(boardTone, { roughness: 0.8, side: THREE.DoubleSide }));
+spine.castShadow = true;
+inner.add(spine);
 const NONE = -3;                                 // no page here (a cover lies there instead)
 const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
-const pageMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff });
-const leftPage = new THREE.Mesh(new THREE.PlaneGeometry(W, H), pageMat());
-leftPage.geometry.translate(-W / 2, 0, 0);
-const rightPage = new THREE.Mesh(new THREE.PlaneGeometry(W, H), pageMat());
-rightPage.geometry.translate(W / 2, 0, 0);
-scene.add(leftPage, rightPage);
+const pageMat = () => std(0xffffff, { roughness: 0.95 });
+const PAGE_SEG = 56;
+const pageGeo = sign => { const g = new THREE.PlaneGeometry(W, H, PAGE_SEG, 1); g.translate(sign * W / 2, 0, 0); return g; };
+const leftPage = new THREE.Mesh(pageGeo(-1), pageMat()), rightPage = new THREE.Mesh(pageGeo(1), pageMat());
+leftPage.receiveShadow = rightPage.receiveShadow = true;
+inner.add(leftPage, rightPage);
+// Open, the pages run down into the gutter: x from the spine, on a stack zTop high, a page lies at
+// zTop (1 - GD d e^(-|x| / GK)), d = 1 open, 0 closed (a closed paperback is a flat block). GK: how wide the valley is.
+const GK = 0.18 * W, GD = 0.6;   // the valley's width, and how far down the leaves go (they hinge above the glue)
+const gutter = (x, zTop, d) => zTop * (1 - GD * d * Math.exp(-Math.abs(x) / GK));
+function shapePage(mesh, zTop, d) {
+  const p = mesh.geometry.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setZ(i, gutter(p.getX(i), zTop, d));
+  p.needsUpdate = true;
+  mesh.geometry.computeVertexNormals();
+}
+// The block on one side (sign -1 left, +1 right), zTop high, its top following the gutter. Faces: the top (material
+// 0), then the fore-edge, the head and the tail and the glued edge at the spine, as lined paper (material 1).
+const STACK_N = 28;
+function shapeStack(mesh, zTop, d, sign) {
+  mesh.visible = zTop > 1e-5;
+  if (!mesh.visible) return;
+  const pos = [], uv = [], idx = [];
+  let n = 0;
+  const v = (x, y, z, u, w) => { pos.push(x, y, z); uv.push(u, w); return n++; };
+  const quad = (a, b, c, e, flip) => { if (flip) idx.push(a, e, c, a, c, b); else idx.push(a, b, c, a, c, e); };
+  const neg = sign < 0, h = H / 2, vz = z => z / (8 * LINE_SP);
+  const xs = [], zs = [];
+  // The block's top sits a leaf under the page drawn on it, so the two never fight for the same depth.
+  for (let i = 0; i <= STACK_N; i++) { const u = i / STACK_N, x = sign * W * (0.3 * u * u + 0.7 * u); xs.push(x); zs.push(Math.max(0, gutter(x, zTop, d) - LEAF)); }
+  for (let i = 0; i < STACK_N; i++) {   // the top
+    const a = v(xs[i], -h, zs[i], i / STACK_N, 0), b = v(xs[i + 1], -h, zs[i + 1], (i + 1) / STACK_N, 0);
+    const c = v(xs[i + 1], h, zs[i + 1], (i + 1) / STACK_N, 1), e = v(xs[i], h, zs[i], i / STACK_N, 1);
+    quad(a, b, c, e, neg);
+  }
+  const topCount = idx.length;
+  for (let i = 0; i < STACK_N; i++) {   // the tail (y = -H/2, toward the reader) and the head
+    const u0 = Math.abs(xs[i]) / W, u1 = Math.abs(xs[i + 1]) / W;
+    let a = v(xs[i], -h, 0, u0, 0), b = v(xs[i + 1], -h, 0, u1, 0), c = v(xs[i + 1], -h, zs[i + 1], u1, vz(zs[i + 1])), e = v(xs[i], -h, zs[i], u0, vz(zs[i]));
+    quad(a, b, c, e, neg);
+    a = v(xs[i], h, 0, u0, 0); b = v(xs[i + 1], h, 0, u1, 0); c = v(xs[i + 1], h, zs[i + 1], u1, vz(zs[i + 1])); e = v(xs[i], h, zs[i], u0, vz(zs[i]));
+    quad(a, b, c, e, !neg);
+  }
+  {   // the fore-edge, and the glued edge at the spine (hidden by the spine when the book is shut)
+    const X = sign * W, zt = zs[STACK_N];
+    quad(v(X, -h, 0, 0, 0), v(X, h, 0, 1, 0), v(X, h, zt, 1, vz(zt)), v(X, -h, zt, 0, vz(zt)), neg);
+    const z0 = zs[0];
+    if (z0 > 1e-5) quad(v(0, -h, 0, 0, 0), v(0, h, 0, 1, 0), v(0, h, z0, 1, vz(z0)), v(0, -h, z0, 0, vz(z0)), !neg);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.addGroup(0, topCount, 0);
+  geo.addGroup(topCount, idx.length - topCount, 1);
+  geo.computeVertexNormals();
+  mesh.geometry.dispose();
+  mesh.geometry = geo;
+}
+// Shape the pages and the blocks for what's open, with the gutter as deep as the view's dip (0 closed, 1 open).
+function shapeAll() {
+  const [l, r] = paper2(), d = view.dip;
+  shapePage(leftPage, l * LEAF, d);
+  shapePage(rightPage, r * LEAF, d);
+  shapeStack(stackL, l * LEAF, d, -1);
+  shapeStack(stackR, r * LEAF, d, 1);
+}
 
 // The leaf being turned: a finely divided sheet, bent on the graphics card. It turns about the spine (x = 0), from
 // angle 0 (lying on the right) to π (lying on the left), and it curls as paper does: the sheet rolls round a line
@@ -121,23 +217,20 @@ scene.add(leftPage, rightPage);
 // whole sheet bows and the edge trails as it lands. In the sheet's own frame: the part before the curl lies flat,
 // the roll (from uC, uL long) turns it by uDelta, the rest goes on straight; then the whole sheet turns by uThetaS
 // about the spine. Its shade comes from how the surface faces the reader, with a sheen along the roll.
-const LEAF_VS = `
-uniform float uThetaS, uDelta, uC, uL, uAlpha;
-varying vec2 vUv;
-varying float vNz, vRoll;
-void main() {
-  vUv = uv;
+// The sheet's shape and its normal, shared by its own shaders and by the depth pass that casts its shadow. At rest
+// (uLift 0) it lies in the gutter's valley like the page beneath it, uDip deep at the spine; lifted, it straightens.
+const LEAF_FN = `
+uniform float uThetaS, uDelta, uC, uL, uAlpha, uDip, uLift;
+vec3 leafPos(vec3 position, out vec3 nrm) {
   vec2 n = vec2(cos(uAlpha), -sin(uAlpha)), along = vec2(sin(uAlpha), cos(uAlpha));
   float s = dot(position.xy, n), w = dot(position.xy, along);
   float X = s, Z = 0.0, phi = 0.0;
-  vRoll = 0.0;
   if (abs(uDelta) > 1e-4 && s > uC) {
     float R = uL / uDelta;
     if (s < uC + uL) {
       phi = uDelta * (s - uC) / uL;
       X = uC + R * sin(phi);
       Z = R * (1.0 - cos(phi));
-      vRoll = sin(3.14159265 * (s - uC) / uL);
     } else {
       float r = s - uC - uL;
       phi = uDelta;
@@ -148,40 +241,67 @@ void main() {
   vec2 q = X * n + w * along;
   float c = cos(uThetaS), sn = sin(uThetaS);
   vec3 p = vec3(q.x * c - Z * sn, q.y, q.x * sn + Z * c);
-  vNz = cos(phi) * c - sin(phi) * n.x * sn;
+  p.z -= uDip * ${GD.toFixed(3)} * exp(-abs(p.x) / ${GK.toFixed(5)}) * (1.0 - uLift);
+  vec3 n0 = vec3(-sin(phi) * n.x, -sin(phi) * n.y, cos(phi));
+  nrm = vec3(n0.x * c - n0.z * sn, n0.y, n0.x * sn + n0.z * c);
+  return p;
+}`;
+const LEAF_VS = LEAF_FN + `
+varying vec2 vUv;
+varying vec3 vN;
+varying float vRoll;
+void main() {
+  vUv = uv;
+  vec3 nrm;
+  vec3 p = leafPos(position, nrm);
+  vN = nrm;
+  float s = dot(position.xy, vec2(cos(uAlpha), -sin(uAlpha)));
+  vRoll = (abs(uDelta) > 1e-4 && s > uC && s < uC + uL) ? sin(3.14159265 * (s - uC) / uL) : 0.0;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
+// Lit like the pages: the key light from uLight, the room's fill as a floor, and a sheen along the roll.
 const LEAF_FS = `
 uniform sampler2D map;
 uniform float uBack;
+uniform vec3 uLight;
 varying vec2 vUv;
-varying float vNz, vRoll;
+varying vec3 vN;
+varying float vRoll;
 void main() {
   vec2 uv = uBack > 0.5 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
-  float facing = uBack > 0.5 ? -vNz : vNz;
-  float shade = 0.64 + 0.36 * clamp(facing, 0.0, 1.0) + 0.06 * pow(1.0 - abs(vNz), 8.0) + 0.05 * vRoll * clamp(facing, 0.0, 1.0);
+  vec3 N = uBack > 0.5 ? -vN : vN;
+  float facing = clamp(dot(N, uLight), 0.0, 1.0);
+  float shade = 0.56 + 0.47 * facing + 0.05 * vRoll * facing + 0.04 * pow(1.0 - abs(N.z), 6.0);
   gl_FragColor = vec4(texture2D(map, uv).rgb * shade, 1.0);
   #include <colorspace_fragment>
 }`;
 const SEG_X = 72, SEG_Y = 48;   // fine both ways: the curl's line can lean
 const leafGeo = new THREE.PlaneGeometry(W, H, SEG_X, SEG_Y);
 leafGeo.translate(W / 2, 0, 0);
-const bend = { uThetaS: { value: 0 }, uDelta: { value: 0 }, uC: { value: 0 }, uL: { value: W }, uAlpha: { value: 0 } };
+const bend = { uThetaS: { value: 0 }, uDelta: { value: 0 }, uC: { value: 0 }, uL: { value: W }, uAlpha: { value: 0 }, uDip: { value: 0 }, uLift: { value: 0 } };
 const leafMat = back => new THREE.ShaderMaterial({ vertexShader: LEAF_VS, fragmentShader: LEAF_FS,
-  side: back ? THREE.BackSide : THREE.FrontSide, uniforms: { ...bend, map: { value: null }, uBack: { value: back ? 1 : 0 } } });
+  side: back ? THREE.BackSide : THREE.FrontSide, uniforms: { ...bend, map: { value: null }, uBack: { value: back ? 1 : 0 }, uLight: { value: LIGHT.clone().normalize() } } });
 const leafFront = new THREE.Mesh(leafGeo, leafMat(false));
 const leafBack = new THREE.Mesh(leafGeo, leafMat(true));
 leafFront.frustumCulled = leafBack.frustumCulled = false;   // the shader moves it; its box doesn't know
+// The sheet's shadow on the pages: a depth pass bent the same way (both faces, so the sheet never has a hole).
+const leafDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide });
+leafDepth.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, bend);
+  sh.vertexShader = LEAF_FN + String.fromCharCode(10) + sh.vertexShader.replace("#include <begin_vertex>", "vec3 leafN; vec3 transformed = leafPos(position, leafN);");
+};
+leafFront.customDepthMaterial = leafDepth;
+leafFront.castShadow = true;
 const leaf = new THREE.Group();
 leaf.add(leafFront, leafBack);
 leaf.visible = false;
-scene.add(leaf);
+inner.add(leaf);
 
-// The shadow the lifted leaf casts on the page beneath it: a soft band just beyond its edge.
+// Without shadow maps (lite), the shadow the lifted leaf casts on the page beneath it: a soft band beyond its edge.
 const castShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, H),
   new THREE.MeshBasicMaterial({ map: edgeShadow(), transparent: true, depthWrite: false, opacity: 0 }));
 castShadow.visible = false;
-scene.add(castShadow);
+inner.add(castShadow);
 
 // Put the leaf at t (0 = lying on the right, 1 = lying on the left). dir: +1 turning forward, -1 back. twist: -1..1,
 // where it was grabbed, high or low, for the way it turns (dir); the corner nearer the grab peels first.
@@ -189,7 +309,7 @@ function poseLeaf(t, dir, twist = 0) {
   const rigid = T && T.rigid;                     // a cover: a stiff board, it doesn't curl
   const p = dir > 0 ? t : 1 - t, lift = Math.sin(Math.PI * p);   // how far through the turn, in its own direction
   // The spine's angle and the free edge's, for a forward turn: the edge leads at first, then trails as it lands.
-  const mean = Math.PI * p, lead = rigid ? 0 : 2.2 * lift * (1 - 1.5 * p);
+  const mean = Math.PI * p, lead = rigid ? 0 : 2.8 * lift * (1 - 1.5 * p);
   const s0 = Math.min(Math.PI, Math.max(0, mean - lead / 2)), e0 = Math.min(Math.PI, Math.max(0, mean + lead / 2));
   const k = smooth(0, 0.45, p);                   // the roll starts out by the edge, and spreads to the whole sheet
   bend.uThetaS.value = dir > 0 ? s0 : Math.PI - s0;
@@ -198,11 +318,12 @@ function poseLeaf(t, dir, twist = 0) {
   bend.uL.value = W * (0.4 + 0.6 * k);
   // The lean is for the peel; it straightens as the page comes down, so it lands square on the stack.
   bend.uAlpha.value = rigid ? 0 : -0.5 * twist * (dir > 0 ? 1 : -1) * (1 - smooth(0.55, 0.9, p));
+  bend.uLift.value = lift;
   // Where the free edge is (at mid height), and how high: the shadow falls just beyond it, on the page below.
   const edge = curlX(W);
   const width = 0.5 * W * lift + 0.02;
   const onRight = edge >= 0;
-  castShadow.visible = lift > 0.01;
+  castShadow.visible = lite && lift > 0.01;
   castShadow.scale.x = onRight ? width : -width;
   castShadow.position.x = onRight ? Math.min(edge, W) + width / 2 : Math.max(edge, -W) - width / 2;
   castShadow.material.opacity = 0.5 * lift;
@@ -258,7 +379,7 @@ function paper(g, side, tone = "#f0e5cb") {
   // The gutter: a shadow along the spine edge (left on a right page, right on a left page).
   const gx = side === "R" ? 0 : TEX_W, gw = 110;
   const gut = g.createLinearGradient(gx, 0, side === "R" ? gw : TEX_W - gw, 0);
-  gut.addColorStop(0, "rgba(60, 40, 20, .28)");
+  gut.addColorStop(0, "rgba(60, 40, 20, .14)");   // light: the page's own curve into the gutter shades it now
   gut.addColorStop(1, "rgba(60, 40, 20, 0)");
   g.fillStyle = gut;
   g.fillRect(0, 0, TEX_W, TEX_H);
@@ -272,44 +393,28 @@ function centred(g, text, y, size, font = FONT, color = INK) {
   g.textAlign = "left";
 }
 
-// A board's inside: the pasted-down endpaper, with the leather turned in round its three outer edges.
-function endpaper(g, side) {
-  g.fillStyle = "#5a1d16";
-  g.fillRect(0, 0, TEX_W, TEX_H);
-  g.fillStyle = g.createPattern(noise ||= makeNoise(), "repeat");
-  for (let i = 0; i < 3; i++) g.fillRect(0, 0, TEX_W, TEX_H);
-  const mx = Math.round(2.2 * OVER / (W + OVER) * TEX_W), my = Math.round(2.2 * OVER / (H + 2 * OVER) * TEX_H);
-  const x0 = side === "R" ? 0 : mx, w = TEX_W - mx;
-  g.save();
-  g.beginPath();
-  g.rect(x0, my, w, TEX_H - 2 * my);
-  g.clip();
-  paper(g, side, "#d9c9a6");
-  g.restore();
-  g.strokeStyle = "rgba(40, 20, 10, .35)";   // the paper's edge on the leather
-  g.lineWidth = 3;
-  g.strokeRect(x0, my, w, TEX_H - 2 * my);
-}
+// A cover's inside: plain paper, as a paperback's is.
+function endpaper(g, side) { paper(g, side, "#e6d8b6"); }
 
+// The cover of the National Archives' 1973 reprint, from a photograph of it (img/catalogo-1849.jpg, public domain
+// via Wikimedia Commons): tan paper, the title in blackletter, a quill, the decree's order and Clavería's
+// signature. The back is plain. Without the photograph, the title is set in type.
+const coverImg = new Image();
+coverImg.src = "/img/catalogo-1849.jpg";
+const coverReady = new Promise(r => { coverImg.onload = () => r(true); coverImg.onerror = () => r(false); });
 function drawCover(g, back) {
-  g.fillStyle = "#5a1d16";
+  g.fillStyle = "#cdb383";
   g.fillRect(0, 0, TEX_W, TEX_H);
   g.fillStyle = g.createPattern(noise ||= makeNoise(), "repeat");
-  for (let i = 0; i < 3; i++) g.fillRect(0, 0, TEX_W, TEX_H);
-  const gold = "#d4b062";
-  g.strokeStyle = gold;
-  g.lineWidth = 6;
-  g.strokeRect(70, 70, TEX_W - 140, TEX_H - 140);
-  g.lineWidth = 2;
-  g.strokeRect(92, 92, TEX_W - 184, TEX_H - 184);
+  for (let i = 0; i < 2; i++) g.fillRect(0, 0, TEX_W, TEX_H);
   if (back) return;
-  centred(g, "CATÁLOGO", 640, 116, FONT_SC, gold);
-  centred(g, "ALFABÉTICO", 790, 96, FONT_SC, gold);
-  centred(g, "DE", 900, 62, FONT_SC, gold);
-  centred(g, "APELLIDOS", 1040, 116, FONT_SC, gold);
-  g.fillStyle = gold;
-  g.fillRect(TEX_W / 2 - 120, 1110, 240, 3);
-  centred(g, "1849", 1230, 64, FONT_SC, gold);
+  if (coverImg.naturalWidth) { g.drawImage(coverImg, 40, 12, 440, 724, 0, 0, TEX_W, TEX_H); return; }
+  const ink = "#3a2a1a";
+  centred(g, "CATÁLOGO", 640, 116, FONT_SC, ink);
+  centred(g, "ALFABÉTICO", 790, 96, FONT_SC, ink);
+  centred(g, "DE", 900, 62, FONT_SC, ink);
+  centred(g, "APELLIDOS", 1040, 116, FONT_SC, ink);
+  centred(g, "Manila, 21 de Noviembre de 1849", 1230, 40, `italic ${FONT}`, ink);
 }
 
 function drawText(g, side, lines, top) {
@@ -355,12 +460,17 @@ function drawPrinted(g, side, page, data) {
   g.font = `${size}px ${FONT}`;
   for (const e of entries) {
     const [x0, y0, x1, y1, name, status] = e;
-    if (sure) {   // Tags: every name washed by how sure the OCR is
+    const litHere = lit && lit.n === page.n && lit.col === e[6];   // a column lit for the foreword
+    if (sure && !litHere) {   // Tags: every name washed by how sure the OCR is
       g.fillStyle = SHADE[status];
       g.fillRect(x0 * S - 4, y0 * S - 2, Math.max(x1 - x0, 50) * S + 8, (y1 - y0) * S + 6);
     }
     if (marked(page, e)) {
       g.fillStyle = "rgba(240, 196, 60, .55)";
+      g.fillRect(x0 * S - 6, y0 * S - 4, Math.max(x1 - x0, 60) * S + 12, (y1 - y0) * S + 10);
+    }
+    if (litHere) {
+      g.fillStyle = "rgba(255, 184, 60, .6)";
       g.fillRect(x0 * S - 6, y0 * S - 4, Math.max(x1 - x0, 60) * S + 12, (y1 - y0) * S + 10);
     }
     g.fillStyle = INK;
@@ -709,7 +819,7 @@ function poseCovers(turn) {
   if (spine.visible) {
     const bottom = desk - BOARD, top = back ? pb + BOARD : single ? zR : pf + BOARD, half = Math.max(1e-4, (top - bottom) / 2);
     spine.position.set(0, 0, (top + bottom) / 2);
-    spine.scale.set((back ? -1 : 1) * Math.max(0.003, 0.62 * half * round), 1, half);
+    spine.scale.set((back ? -1 : 1) * Math.max(0.003, 0.35 * half * round), 1, half);   // a paperback's spine: barely rounded
   }
 }
 function setFace(mat, f, side) {
@@ -720,19 +830,20 @@ const pageOr = f => (f === 1 || f === FACES.length - 2 ? NONE : f);   // the end
 
 function place() {
   const [left, right] = paper2(), leftZ = left * LEAF, rightZ = right * LEAF;
-  stackL.visible = mode === "spread" && left > 0;
-  stackR.visible = right > 0;
-  stackL.scale.z = Math.max(leftZ, 1e-4); stackL.position.set(-W / 2, 0, leftZ / 2 - LEAF);
-  stackR.scale.z = Math.max(rightZ, 1e-4); stackR.position.set(W / 2, 0, rightZ / 2 - LEAF);
-  leftPage.position.z = leftZ;
-  rightPage.position.z = rightZ;
+  view.td = closedBook() ? 0 : 1;                // the gutter opens up with the book (eased, in ease())
+  if (reduceMotion) view.dip = view.td;
+  shapeAll();
   castShadow.position.z = Math.max(leftZ, rightZ) + 0.001;
   const alone = mode === "single" || cur === 0 || cur === LEAVES;
   shadow.scale.x = alone ? 0.55 : 1;
   shadow.position.x = mode === "single" || cur === 0 ? W / 2 : cur === LEAVES ? -W / 2 : 0;
+  // The group turns about the closed block's centre, for turning the book over in the hand.
+  const cx = mode === "spread" && cur === LEAVES ? -W / 2 : W / 2, cz = closedBook() ? Math.max(leftZ, rightZ) / 2 : 0;
+  book.position.set(cx, 0, cz);
+  inner.position.set(-cx, 0, -cz);
   poseCovers(null);
-  // Closed, the book is seen at an angle, lying on the desk; open, from straight above, to read.
-  const tt = closedBook() ? 1 : 0;
+  // Closed, the book is seen at an angle, lying on the desk; open, from a little in front of straight above.
+  const tt = tiltFor();
   if (tt !== view.tt) { view.tt = tt; ease(); }
   document.body.classList.toggle("shut", closedBook());
 }
@@ -786,7 +897,9 @@ function startTurn(dir, peek = false) {
   const moving = mode === "single" ? (dir > 0 ? SINGLE[si] : SINGLE[si - 1]) : 2 * (dir > 0 ? cur : cur - 1);
   T = { dir, t: dir > 0 ? 0 : 1, twist: -0.4 * dir, anim: null, rigid: moving === 0 || FACES[moving + 1] === "backcover" || FACES[moving] === "backcover" };
   if (mode === "spread" && T.rigid) { T.cover = moving === 0 ? "F" : "B"; leaf.visible = false; }
-  if (!peek && closedBook() && view.tt) { view.tt = 0; ease(); }   // opening the book: the camera comes round to read it
+  if (!peek && closedBook() && view.tt === 1) { view.tt = READ_TILT; ease(); }   // opening the book: the camera comes round to read it
+  if (!peek && (tumble.x || tumble.y)) springBack();                              // and the book settles flat if it was in the hand
+  if (!peek && storyOpen && !choreo) closeStory(false, true);                     // turned by hand: the reader has the book
   // Closing a cover: the shadow under the book comes in to the closed book's size with it.
   if (T.cover === "F" && dir < 0) { shadow.scale.x = 0.55; shadow.position.x = W / 2; }
   if (T.cover === "B" && dir > 0) { shadow.scale.x = 0.55; shadow.position.x = -W / 2; }
@@ -806,16 +919,17 @@ function drawTurn() {
   const [left, right] = paper2(), zR = right * LEAF, zL = left * LEAF;
   // The hinge rides on the taller stack while the leaf is over it, so the sheet never cuts into the pages.
   leaf.position.z = zR + (zL - zR) * (zR >= zL ? smooth(0.5, 0.85, T.t) : smooth(0.15, 0.5, T.t)) + 0.003;
-  leaf.scale.z = T.rigid ? 1 : mode === "single" ? 0.55 : 0.8;   // a flatter lift: the page turns low over the book, as a real one does
+  leaf.scale.z = T.rigid ? 1 : mode === "single" ? 0.75 : 1;      // the lift: how high the page rises as it turns
+  bend.uDip.value = (leaf.position.z / leaf.scale.z) * view.dip;   // at rest, down into the gutter like the page beneath
   render();
 }
 
 // Animate the turn to its end (goal 1 = lying on the left) or back where it started. Full turns ease in and out;
 // a release mid-drag eases out from where the finger left it.
-function settle(goal, fromDrag = false) {
+function settle(goal, fromDrag = false, dur) {
   if (!T) return;
   const from = T.t, dist = Math.abs(goal - from);
-  T.anim = { from, goal, start: performance.now(), dur: reduceMotion ? 0 : Math.max(140, (fromDrag ? 520 : 820) * dist), fromDrag };
+  T.anim = { from, goal, start: performance.now(), dur: reduceMotion ? 0 : dur ?? Math.max(160, (fromDrag ? 560 : 1050) * dist), fromDrag };
   requestAnimationFrame(stepTurn);
 }
 function stepTurn() {
@@ -830,24 +944,30 @@ function stepTurn() {
 function endTurn() {
   if (!T) return;
   const completed = T.dir > 0 ? T.t >= 0.999 : T.t <= 0.001;
-  const dir = T.dir;
+  const dir = T.dir, onEnd = T.onEnd;
   T = null;
   leaf.visible = false;
   castShadow.visible = false;
   if (completed) { if (mode === "single") si += dir; else cur += dir; }
   show();
   frame();
+  if (onEnd) onEnd(completed);
 }
 const finishTurn = () => { if (T) { T.t = T.dir > 0 ? 1 : 0; endTurn(); } };
 // A whole turn, as from the arrows or a tap.
-function turn(dir) {
+function turn(dir, dur) {
   if (T) finishTurn();
-  if (startTurn(dir)) settle(dir > 0 ? 1 : 0);
+  if (startTurn(dir)) settle(dir > 0 ? 1 : 0, false, dur);
 }
 
 // ---------- Camera: fit, zoom and pan ----------
-const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0, side: 0, ts: 0 };   // x, y, zoom, tilt, side: now; tx, ty, tz, tt, ts: where the camera eases to
-// side: the width (px) of the history panel beside the book, which the book's view leaves free on the left.
+const view = { zoom: 1, tz: 1, x: 0, y: 0, tx: 0, ty: 0, tilt: 0, tt: 0, side: 0, ts: 0, below: 0, tb: 0, dip: 0, td: 0 };   // x, y, zoom, tilt, side: now; tx, ty, tz, tt, ts: where the camera eases to; dip: the gutter, 0 shut, 1 open
+// Reading, the camera sits a little in front of straight above, so the open book keeps its depth; zoomed in to
+// check a line, it goes straight above. Shut, the book is seen lying on the desk (tilt 1).
+const READ_TILT = 0;   // 0: straight above, as the book always was (a small value tilts the open book)
+const tiltFor = () => (closedBook() ? 1 : view.tz > 1.05 ? 0 : READ_TILT);
+// side: the width (px) of the foreword beside the book, which the book's view leaves free on the left; below: its
+// height (px) under the book, on a phone.
 const freeW = () => (innerWidth - view.side) / innerWidth;
 const narrow = () => mode === "single";
 const TOP = () => document.querySelector(".bar.top").offsetHeight, BOT = () => document.querySelector(".bar.bottom").offsetHeight;
@@ -862,6 +982,7 @@ function span() {
 function frame() {
   // The default view: what's open, whole (zooming out smoothly if zoomed in).
   view.tz = 1;
+  view.tt = tiltFor();
   const [x0, x1] = span();
   view.tx = (x0 + x1) / 2;
   view.ty = 0;
@@ -871,7 +992,7 @@ function frame() {
 function fitDistance() {
   const [x0, x1] = span();
   const vw = (x1 - x0) * 1.03, vh = H * 1.035;
-  const usable = (innerHeight - TOP() - BOT()) / innerHeight;
+  const usable = (innerHeight - TOP() - BOT() - view.below) / innerHeight;
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   return Math.max(vh / 2 / (tan * usable), vw / 2 / (tan * camera.aspect * freeW()));
 }
@@ -879,12 +1000,14 @@ function fitDistance() {
 function applyCamera() {
   // tilt 0: straight above the page. tilt 1: the book lying on a desk, seen from the front and a little to the
   // right, a step further back. In between, the camera swings between the two.
-  const tilt = view.tilt, d = (fitDistance() / view.zoom) * (1 + 0.55 * tilt);
+  const tilt = view.tilt, d = (fitDistance() / view.zoom) * (1 + 0.22 * tilt * tilt);   // a small step back for the desk view
   // Keep the bars from covering the page: shift the view by half the difference between the two bars.
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt);
+  const shift = ((BOT() - TOP()) / innerHeight) * d * tan * (1 - tilt) + ((view.below / innerHeight) * d * tan) / Math.cos(0.82 * tilt);
   // And move it over by half the panel's width, so the book sits in the middle of the space the panel leaves.
-  const pitch = 0.82 * tilt, yaw = 0.32 * tilt, x = view.x - (view.side / innerWidth) * d * tan * camera.aspect, y = view.y - shift;
+  // The shift runs along the camera's own up, so a yawed camera moves the book up the screen, not sideways.
+  const pitch = 0.82 * tilt, yaw = 0.32 * tilt;
+  const x = view.x - (view.side / innerWidth) * d * tan * camera.aspect + shift * Math.sin(yaw), y = view.y - shift * Math.cos(yaw);
   camera.position.set(x + d * Math.sin(pitch) * Math.sin(yaw), y - d * Math.sin(pitch) * Math.cos(yaw), d * Math.cos(pitch));
   camera.up.set(-Math.sin(yaw), Math.cos(yaw), 0);
   camera.lookAt(x, y, 0);
@@ -902,9 +1025,15 @@ function ease() {
     view.zoom += (view.tz - view.zoom) * k;
     view.tilt += (view.tt - view.tilt) * (reduceMotion ? 1 : 0.07);   // the swing from desk to page is slower
     view.side += (view.ts - view.side) * (reduceMotion ? 1 : 0.14);
+    view.below += (view.tb - view.below) * (reduceMotion ? 1 : 0.14);
+    if (view.dip !== view.td) {   // the gutter deepens as the book opens, and flattens as it shuts
+      view.dip += (view.td - view.dip) * (reduceMotion ? 1 : 0.1);
+      if (Math.abs(view.td - view.dip) < 0.004) view.dip = view.td;
+      shapeAll();
+    }
     render();
-    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) + Math.abs(view.ts - view.side) / 1000 > 1e-4) requestAnimationFrame(step);
-    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; view.side = view.ts; easing = false; render(); }
+    if (Math.abs(view.tx - view.x) + Math.abs(view.ty - view.y) + Math.abs(view.tz - view.zoom) + Math.abs(view.tt - view.tilt) + Math.abs(view.ts - view.side) / 1000 + Math.abs(view.tb - view.below) / 1000 + Math.abs(view.td - view.dip) > 1e-4) requestAnimationFrame(step);
+    else { view.x = view.tx; view.y = view.ty; view.zoom = view.tz; view.tilt = view.tt; view.side = view.ts; view.below = view.tb; easing = false; render(); }
   };
   step();
 }
@@ -922,6 +1051,7 @@ function clampView() {
 // Zoom in on a point, smoothly (a double tap, a search) or at once (pinch, wheel, keys).
 function glideTo(z, wx, wy) {
   view.tz = Math.max(1, Math.min(6, z));
+  view.tt = tiltFor();
   view.tx = wx; view.ty = wy;
   const keep = view.zoom;
   view.zoom = view.tz; clampView(); view.zoom = keep;   // clamp for where it's going
@@ -930,6 +1060,8 @@ function glideTo(z, wx, wy) {
 function zoomTo(z, wx, wy) {
   const old = view.zoom;
   view.zoom = view.tz = Math.max(1, Math.min(6, z));
+  view.tt = tiltFor();
+  if (view.tt !== view.tilt) ease();
   if (wx != null) {   // keep the point under the finger where it is
     view.tx = wx - (wx - view.tx) * old / view.zoom;
     view.ty = wy - (wy - view.ty) * old / view.zoom;
@@ -1000,61 +1132,165 @@ function updateBar() {
   if (!dlg.open) setPath(n ? `/${n}` : "/");
 }
 
-// ---------- The history, at the side, and the book opening ----------
-// The history is optional: a panel at the side (index.html), opened from the tab on the left edge or from the ? panel.
-// On a wide screen it opens beside the closed book on a first visit, and the book moves over to make room; on a narrow
-// one it lies over the book, so it waits for the tab. A link to a page, a name or an entry goes straight there.
+// ---------- The foreword, beside the book, and the book opening ----------
+// The foreword is optional: museum placards beside the closed book on a wide screen, below it on a phone
+// (index.html). It opens on every visit to the front door and folds away to the tab at the left edge; a link to a
+// page, a name or an entry goes straight there. As the placards scroll, the book acts each one (BEATS). A hand on
+// the book stops the beat, and a page turned by hand folds the foreword away, so the reader can read.
 const story = document.getElementById("story"), storyTab = document.getElementById("storytab"), storyX = document.getElementById("storyx");
-let storyOpen = false;
-const beside = () => innerWidth >= 760;                       // the panel sits beside the book, not over it
-const storyCovers = () => storyOpen && !beside();             // the panel is over the book: the book waits
-function placeStory() {   // between the bars; on a wide screen the book's view makes room for it
-  story.style.top = `${TOP()}px`;
-  story.style.bottom = `${BOT()}px`;
-  storyX.style.top = `${TOP() + 10}px`;
+let storyOpen = false, choreo = false;                        // choreo: a beat is turning the pages, not the reader
+const beside = () => innerWidth >= 760;                       // the placards sit beside the book, not below it
+const PANEL = 0.42;                                           // on a phone, the book's share of the screen, from the top
+function placeStory() {   // beside the book, between the bars; or below it, and the book's view makes room above
+  const side = beside(), top = side ? TOP() : Math.round(innerHeight * PANEL);
+  story.classList.toggle("below", !side);
+  story.style.top = `${top}px`;
+  story.style.bottom = side ? `${BOT()}px` : "0";
+  storyX.style.top = `${top + 10}px`;
   storyX.hidden = !storyOpen;
-  view.ts = storyOpen && beside() ? story.offsetWidth : 0;
+  dots.hidden = !storyOpen;
+  dots.classList.toggle("below", !side);
+  dots.style.top = side ? "" : `${top + 14}px`;
+  document.body.classList.toggle("foreword", storyOpen);
+  view.ts = storyOpen && side ? story.offsetWidth : 0;
+  view.tb = storyOpen && !side ? innerHeight - top : 0;
 }
 function showStory(fromTop = false) {
   storyOpen = true;
   story.classList.remove("out");
   storyTab.setAttribute("aria-expanded", "true");
-  if (fromTop) story.scrollTop = 0;
+  if (fromTop) {   // at the top: again once laid out and once the type has arrived, as the reflow can snap it on
+    const opened = performance.now(), pin = () => { if (storyOpen && performance.now() - opened < 1500) { story.scrollTop = 0; onStoryScroll(); } };
+    pin();
+    requestAnimationFrame(pin);
+    setTimeout(pin, 300);
+    document.fonts?.ready.then(pin);
+  }
   placeStory();
+  if (fromTop) { view.side = view.ts; view.below = view.tb; }   // opened with the page: the book starts in its place, no glide
   ease();
+  beatNow = -1;
+  onStoryScroll();
 }
-function closeStory(open) {
+function closeStory(open, quiet = false) {
   if (!storyOpen) return;
   storyOpen = false;
-  try { localStorage.setItem("story", "seen"); } catch {}
+  stopBeat();
   story.classList.add("out");
   storyTab.setAttribute("aria-expanded", "false");
   placeStory();
   ease();
-  if (open) openBook(reduceMotion ? 0 : 450); else inviteOpen(600);
+  if (open) openBook(reduceMotion ? 0 : 450); else if (!quiet) inviteOpen(600);
 }
-// The foreword lights the part being read (the one across the middle), the rest waits faintly. Beside it the book
-// stays shut on the desk and, now and then, its cover lifts a little and settles, as if it might open.
-const reading = new IntersectionObserver(entries => {
-  for (const e of entries) if (e.isIntersecting) for (const s of story.querySelectorAll(".slide")) s.classList.toggle("on", s === e.target);
-}, { root: story, rootMargin: "-42% 0px -48% 0px" });
-for (const s of story.querySelectorAll(".slide")) reading.observe(s);
-let stirring = false;
-setInterval(() => {
-  if (!storyOpen || !beside() || document.hidden || T || peeking || !frontClosed()) return;
-  stirring = true;
-  peekCover(true);
-  setTimeout(() => { if (stirring) { stirring = false; peekCover(false); } }, 1100);
-}, 7000);
+// The placard being read is the one across the middle of the panel (or the nearest to it): it's lit, the rest
+// wait faintly, and the book plays its beat.
+const slides = [...story.querySelectorAll(".slide")];
+function activeSlide() {
+  const r = story.getBoundingClientRect(), mid = r.top + r.height * 0.47;
+  let best = 0, bestD = Infinity;
+  slides.forEach((x, i) => {
+    const b = x.getBoundingClientRect();
+    const d = mid >= b.top && mid <= b.bottom ? 0 : Math.min(Math.abs(mid - b.top), Math.abs(mid - b.bottom));
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  return best;
+}
+const dots = document.getElementById("dots");
+dots.innerHTML = slides.map((x, i) => `<button type="button" data-i="${i}" aria-label="${x.querySelector("h2").textContent}"></button>`).join("");
+dots.onclick = e => { const b = e.target.closest("button[data-i]"); if (b) story.scrollTo({ top: slides[+b.dataset.i].offsetTop, behavior: reduceMotion ? "instant" : "smooth" }); };
+let scrollTick = false;
+function onStoryScroll() {
+  if (scrollTick) return;
+  scrollTick = true;
+  requestAnimationFrame(() => {
+    scrollTick = false;
+    const k = activeSlide();
+    slides.forEach((x, i) => x.classList.toggle("on", i === k));
+    [...dots.children].forEach((b, i) => b.setAttribute("aria-current", i === k ? "true" : "false"));
+    if (storyOpen) playBeat(k);
+  });
+}
+story.addEventListener("scroll", onStoryScroll, { passive: true });
 storyTab.onclick = () => showStory();
 storyX.onclick = () => closeStory(false);
+document.getElementById("skipto").onclick = () => closeStory(false);
 story.querySelector(".open").onclick = () => closeStory(true);
+
+// The beats: what the book does for each placard. Each is a sequence of turns; a new beat, a hand on the book or
+// the foreword closing cancels the one running (its id goes stale, and it stops at its next step).
+let beatNow = -1, beatId = 0, lit = null;                    // lit: {n, col}, a column washed gold on its page
+const wait = ms => new Promise(r => setTimeout(r, ms));
+// One turn, as a promise: resolves when the leaf lands (false if there was nothing to turn).
+const turnP = (dir, dur) => new Promise(res => {
+  if (T) finishTurn();
+  if (!startTurn(dir)) return res(false);
+  T.onEnd = () => res(true);
+  settle(dir > 0 ? 1 : 0, false, dur);
+});
+const stale = id => id !== beatId || !storyOpen;
+const at = () => (mode === "single" ? si : cur), jumpTo = k => { if (mode === "single") si = k; else cur = k; show(); };
+async function shut(id, slow = false) {   // close the book: the cover at once, or (slow) leaf by leaf first
+  if (peeking) peekCover(false);
+  if (closedBook()) return;
+  if (!slow && at() > 1) jumpTo(1);
+  if (slow && at() > 3) jumpTo(3);
+  while (slow && !stale(id) && at() > 1) await turnP(-1, 1100);
+  if (!stale(id)) await turnP(-1, slow ? 900 : 650);
+}
+async function openTo(id, n) {           // open the book (the cover first, if it's shut) and turn to a page
+  if (peeking) peekCover(false);
+  if (closedBook()) { await turnP(1, 700); if (stale(id)) return; }
+  goToPage(n, true);
+}
+const BEATS = [
+  async id => shut(id),                                       // the title wall: shut, under the light
+  async id => shut(id),                                       // 1: shut
+  async id => {                                               // 2: the cover opens, the pages riffle, it shuts again
+    await shut(id); if (stale(id)) return;
+    await turnP(1, 650);
+    for (let i = 0; i < 9 && !stale(id); i++) await turnP(1, 150);
+    if (stale(id)) return;
+    await wait(350); if (stale(id)) return;
+    await shut(id);
+  },
+  async id => openTo(id, 58),                                 // 3: open on the table, at a spread
+  async id => {                                               // 4: the A pages, one column lit (drawn lit before the turn)
+    lit = { n: 2, col: 1 }; forget(faceOfPage(2));
+    await openTo(id, 2);
+  },
+  async id => shut(id, true),                                 // 5: closed, slowly
+  async id => { await shut(id); if (!stale(id)) { await wait(400); if (!stale(id)) peekCover(true); } }];   // 6: the cover lifts and waits
+function unlight() { if (lit) { const f = faceOfPage(lit.n); lit = null; forget(f); } }
+const BEATS_ON = false;                                     // the book keeps still while the foreword is read
+function playBeat(k) {
+  if (!BEATS_ON || k === beatNow || k < 0 || reduceMotion) return;         // (with reduced motion the book keeps still)
+  beatNow = k;
+  const id = ++beatId;
+  unlight();
+  choreo = true;
+  BEATS[k](id).catch(() => {}).finally(() => { if (id === beatId) choreo = false; });
+}
+function stopBeat() {
+  beatId++;
+  choreo = false;
+  beatNow = -1;
+  if (lit) { unlight(); show(); }
+}
+// A hand on the book stops the beat; let go, the beat starts over once the hand is away (the reader can turn the
+// book over and look at it, and the docent steps back).
+let resumeTimer;
+function pauseBeat() { if (storyOpen) { beatId++; choreo = false; } }
+function resumeBeat() {
+  if (!storyOpen) return;
+  clearTimeout(resumeTimer);
+  resumeTimer = setTimeout(() => { if (storyOpen && !pointers.size && !drag) { beatNow = -1; playBeat(activeSlide()); } }, 1400);
+}
 function openBook(delay) {   // the front cover lifts, if the book is still closed on it (once the tab is in view)
   if (document.hidden) {
     addEventListener("visibilitychange", () => openBook(delay), { once: true });
     return;
   }
-  setTimeout(() => { if (!T && !storyCovers() && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
+  setTimeout(() => { if (!T && (mode === "single" ? si === 0 : cur === 0)) next(); }, delay);
 }
 
 // The closed book waits for the reader: on a computer the cover lifts a little under the pointer, and a click opens
@@ -1063,7 +1299,7 @@ const PEEK = 0.09;                                // how far the cover lifts, as
 let peeking = false, invited = false;
 const frontClosed = () => (mode === "single" ? si === 0 : cur === 0);
 function peekCover(on) {
-  if (reduceMotion || storyCovers() || view.zoom > 1.05) return;
+  if (reduceMotion || view.zoom > 1.05) return;
   if (on && !peeking && !T && frontClosed() && startTurn(1, true)) {
     peeking = true;
     T.hold = true;
@@ -1078,24 +1314,24 @@ function openCover() {   // a click or a tap on the closed book: open it, from t
   if (peeking && T) {
     peeking = false;
     T.hold = false;
-    view.tt = 0;
+    view.tt = READ_TILT;
     ease();
+    if (storyOpen) closeStory(false, true);
     settle(1);
   } else next();
 }
 const overBook = (x, y) => { const p = worldAt(x, y), [x0, x1] = span(); return p.x >= x0 && p.x <= x1 && Math.abs(p.y) <= H / 2; };
 canvas.addEventListener("pointermove", e => {
   if (e.pointerType !== "mouse" || pointers.size) return;
-  stirring = false;
-  const over = !T || peeking ? frontClosed() && view.zoom <= 1.05 && overBook(e.clientX, e.clientY) : false;
+  const over = !T || peeking ? frontClosed() && view.zoom <= 1.05 && !tumble.x && !tumble.y && overBook(e.clientX, e.clientY) : false;
   canvas.style.cursor = over ? "pointer" : "";
-  peekCover(over);
+  if (!choreo || peeking) peekCover(over);
 });
-canvas.addEventListener("pointerleave", () => { canvas.style.cursor = ""; peekCover(false); });
+canvas.addEventListener("pointerleave", () => { canvas.style.cursor = ""; if (!choreo) peekCover(false); });
 function inviteOpen(delay) {
   if (document.hidden) { addEventListener("visibilitychange", () => inviteOpen(delay), { once: true }); return; }
   setTimeout(() => {
-    if (invited || storyCovers() || !frontClosed()) return;
+    if (invited || storyOpen || !frontClosed()) return;
     invited = true;
     const touch = matchMedia("(hover: none)").matches;
     toast(touch ? "Tap the book to open it" : "Click the book to open it");
@@ -1415,11 +1651,76 @@ function showTally(options, mine, pending, ocr) {   // ocr: a green name's OCR r
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// ---------- The closed book, in the hand ----------
+// Shut, the book can be turned over: a drag tumbles it about its centre (pitch and yaw), and let go it settles back
+// onto the desk with a little spring. Its parts have labels, as an exhibit does: tap the spine, the page block or
+// the back (the front opens it).
+const tumble = { x: 0, y: 0, x0: 0, y0: 0, vx: 0, vy: 0, anim: 0 };
+function setTumble(x, y) {
+  tumble.x = Math.max(-1.25, Math.min(1.25, x));
+  tumble.y = y;
+  book.rotation.set(tumble.x, tumble.y, 0);
+  hideLabel();
+  render();
+}
+function stopSpring() { tumble.anim = 0; }
+function springBack() {
+  stopSpring();
+  const goalY = Math.round(tumble.y / (2 * Math.PI)) * 2 * Math.PI;   // the nearest way round to lying flat
+  if (reduceMotion) { tumble.x = tumble.y = 0; book.rotation.set(0, 0, 0); render(); return; }
+  const id = ++tumble.anim;
+  tumble.vx = tumble.vy = 0;
+  const step = () => {
+    if (tumble.anim !== id) return;
+    tumble.vx = tumble.vx * 0.8 - tumble.x * 0.085;
+    tumble.vy = tumble.vy * 0.8 - (tumble.y - goalY) * 0.085;
+    tumble.x += tumble.vx; tumble.y += tumble.vy;
+    book.rotation.set(tumble.x, tumble.y, 0);
+    render();
+    if (Math.abs(tumble.x) + Math.abs(tumble.y - goalY) + Math.abs(tumble.vx) + Math.abs(tumble.vy) > 2e-3) requestAnimationFrame(step);
+    else { tumble.x = tumble.y = 0; tumble.anim = 0; book.rotation.set(0, 0, 0); render(); }
+  };
+  step();
+}
+const LABELS = {
+  spine: "The spine. A to Z, with Ll as a letter of its own after L: the Spanish alphabet of 1849.",
+  edge: "141 pages of names, six columns to a page, about 72 names to a column.",
+  back: "The back of the book. Drag to turn it over; tap the front to open it." };
+const caster = new THREE.Raycaster();
+// Which part of the shut book is under a point: "cover" (the front, which opens it), "back", "spine" or "edge".
+function partAt(px, py) {
+  applyCamera();
+  camera.updateMatrixWorld();
+  book.updateMatrixWorld(true);
+  caster.setFromCamera(new THREE.Vector2((px / innerWidth) * 2 - 1, -(py / innerHeight) * 2 + 1), camera);
+  const hit = caster.intersectObjects([coverF, coverB, spine, stackR, stackL].filter(o => o.visible), false)[0];   // (a hidden cover still catches rays)
+  if (!hit) return null;
+  const o = hit.object, nz = hit.face ? hit.face.normal.z : 0;
+  if (o === spine) return "spine";
+  if (o === stackR || o === stackL) return "edge";
+  if (o === coverF) return nz > 0.5 ? "cover" : nz < -0.5 ? "back" : "edge";   // its inside shows only when it's the one on top, turned
+  return nz < -0.5 ? "back" : nz > 0.5 ? "cover" : "edge";
+}
+const labelBox = document.getElementById("label");
+let labelTimer;
+function showLabel(part, x, y) {
+  labelBox.textContent = LABELS[part];
+  labelBox.hidden = false;
+  const w = labelBox.offsetWidth, h = labelBox.offsetHeight;
+  labelBox.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, x - w / 2))}px`;
+  labelBox.style.top = `${y - h - 14 < 60 ? y + 18 : y - h - 14}px`;
+  clearTimeout(labelTimer);
+  labelTimer = setTimeout(hideLabel, 6000);
+}
+function hideLabel() { if (!labelBox.hidden) labelBox.hidden = true; }
+
 // ---------- Input ----------
 const pointers = new Map();
 let drag = null, lastTap = 0, pinch = null;
 canvas.addEventListener("pointerdown", e => {
   try { canvas.setPointerCapture(e.pointerId); } catch {}
+  hideLabel();
+  pauseBeat();
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
@@ -1447,6 +1748,17 @@ canvas.addEventListener("pointermove", e => {
     clampView();
     view.x = view.tx; view.y = view.ty;
     render();
+    return;
+  }
+  // The closed book: a drag turns it over in the hand; only a drag on the lifted cover takes the cover with it.
+  if (drag.tumbling) { setTumble(tumble.x0 + dy * 0.011, tumble.y0 + dx * 0.011); return; }
+  if (!drag.turning && drag.moved && closedBook() && !(peeking && T && dx < 0 && Math.abs(dx) > Math.abs(dy) * 1.2)) {
+    if (peeking) peekCover(false);
+    if (T) finishTurn();
+    drag.tumbling = true;
+    tumble.x0 = tumble.x; tumble.y0 = tumble.y;
+    stopSpring();
+    setTumble(tumble.x0 + dy * 0.011, tumble.y0 + dx * 0.011);
     return;
   }
   // Not zoomed: a sideways drag turns the page, following the finger.
@@ -1481,8 +1793,10 @@ canvas.addEventListener("pointermove", e => {
 const up = e => {
   pointers.delete(e.pointerId);
   canvas.classList.remove("dragging");
+  resumeBeat();
   if (pinch) { if (pointers.size < 2) pinch = null; drag = null; return; }
   if (!drag) return;
+  if (drag.tumbling) { drag = null; springBack(); return; }   // let go: the book settles back onto the desk
   if (drag.turning && T) {
     // Let go: finish the turn if it's past halfway or was flicked, otherwise let the page fall back.
     const [t0, x0] = drag.trail[0] || [0, e.clientX], [t1, x1] = drag.trail[drag.trail.length - 1] || [1, e.clientX];
@@ -1494,7 +1808,11 @@ const up = e => {
     drag = null;
     return;
   }
-  if (!drag.moved && view.zoom <= 1.05 && frontClosed() && overBook(e.clientX, e.clientY)) { drag = null; openCover(); return; }
+  if (!drag.moved && view.zoom <= 1.05 && closedBook()) {   // a tap on the shut book: open it, or read a part's label
+    const part = partAt(e.clientX, e.clientY);
+    if (part && part !== "cover") { drag = null; showLabel(part, e.clientX, e.clientY); return; }
+    if (frontClosed() && (part === "cover" || overBook(e.clientX, e.clientY))) { drag = null; openCover(); return; }
+  }
   if (!drag.moved) {
     const now = performance.now();
     if (now - lastTap < 300) {
@@ -1582,6 +1900,11 @@ function themeButton() {
   themeBtn.setAttribute("aria-label", label);
   themeBtn.title = label;
   document.querySelector('meta[name="theme-color"]').content = isDark() ? "#1d1712" : "#f1eee8";
+  // The room's light: the house lights up, or down to one lamp over the book.
+  key.intensity = isDark() ? 2.7 : 2.3;
+  fill.intensity = isDark() ? 0.65 : 1.2;
+  fill.groundColor.set(isDark() ? 0x1a140e : 0x5a4a3a);
+  if (FACES.length) render();
 }
 themeBtn.onclick = () => {
   const theme = isDark() ? "light" : "dark";
@@ -1593,7 +1916,7 @@ darkQuery.addEventListener?.("change", themeButton);
 themeButton();
 addEventListener("keydown", e => {
   if (e.key === "Escape" && storyOpen && !document.querySelector("dialog[open]")) { closeStory(false); return; }
-  if (storyCovers() || e.target.closest?.("input, textarea, select, dialog, #story")) return;
+  if (e.target.closest?.("input, textarea, select, dialog, #story")) return;
   if (e.key === "ArrowRight") next();
   else if (e.key === "ArrowLeft") prev();
   else if (e.key === "+" || e.key === "=") zoomTo(view.zoom * 1.4, view.x, view.y);
@@ -1616,6 +1939,7 @@ function render() {
 function resize() {
   placeStory();
   view.side = view.ts;
+  view.below = view.tb;
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
@@ -1624,6 +1948,45 @@ function resize() {
   updateBar();
 }
 addEventListener("resize", resize);
+
+// The paper's edge: fine lines, one every two leaves or so, on cream (repeated along the block's height).
+function edgeLines() {
+  const c = document.createElement("canvas"), g = c.getContext("2d");
+  c.width = 64; c.height = 128;
+  g.fillStyle = "#eadfc3";
+  g.fillRect(0, 0, 64, 128);
+  for (let i = 0; i < 8; i++) {
+    g.fillStyle = `rgba(120, 95, 55, ${0.3 + 0.3 * Math.random()})`;
+    g.fillRect(0, i * 16 + 7, 64, 1.5);
+    g.fillStyle = "rgba(255, 255, 255, .3)";
+    g.fillRect(0, i * 16 + 9, 64, 1);
+  }
+  return c;
+}
+
+// A few frames of the opening glide, timed: a slow GPU drops the shadow maps and the extra pixels (lite), and the
+// turning leaf gets its drawn shadow band back.
+function probe() {
+  if (reduceMotion) return;
+  const dts = [];
+  let last = performance.now();
+  const tick = () => {
+    const now = performance.now();
+    dts.push(now - last);
+    last = now;
+    render();
+    if (dts.length < 26) requestAnimationFrame(tick);
+    else if (dts.slice(6).sort((a, b) => a - b)[10] > 26) goLite();   // the median frame over 26 ms: under 40 fps
+  };
+  requestAnimationFrame(tick);
+}
+function goLite() {
+  lite = true;
+  renderer.shadowMap.enabled = false;
+  renderer.setPixelRatio(1);
+  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
+  render();
+}
 
 function radialShadow() {
   const c = document.createElement("canvas"), g = c.getContext("2d");
@@ -1651,7 +2014,7 @@ function edgeShadow() {
 }
 
 // For checking in the browser console.
-window.__book = { view, scene, shadow, leaf, poseLeaf, startTurn, settle, get T() { return T; }, get mode() { return mode; },
+window.__book = { view, scene, shadow, leaf, poseLeaf, startTurn, settle, partAt, tumble, book, renderer, key, ease, get easing() { return easing; }, get lite() { return lite; }, get T() { return T; }, get mode() { return mode; },
   get cur() { return cur; }, get si() { return si; }, goToPage, next, prev, render,
   snap() { view.x = view.tx; view.y = view.ty; render(); } };
 
@@ -1709,7 +2072,7 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
 
 (async () => {
   const pages = fetch(dataUrl("pages.json")).then(r => r.json());
-  await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`)]).catch(() => {});
+  await Promise.all([document.fonts.load(`40px ${FONT}`), document.fonts.load(`40px ${FONT_SC}`), document.fonts.load(`italic 40px ${FONT}`), coverReady]).catch(() => {});
   PAGES = await pages;
   FACES = ["cover", "endpaper", "title", "about", ...PAGES];
   if (FACES.length % 2 === 1) FACES.push(null);          // the last printed page's blank back
@@ -1720,9 +2083,11 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
   const hash = location.hash, path = location.pathname;   // before resize() rewrites them
   resize();
   // Start where the camera is going, not gliding there from the spine (a glide that stalls in a hidden tab).
-  Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz, tilt: view.tt });
+  Object.assign(view, { x: view.tx, y: view.ty, zoom: view.tz, tilt: view.tt, dip: view.td });
+  shapeAll();
   render();
   viewButton();
+  probe();
   const linked = (await follow(hash)) || (await followPath(path));
   if (linked) {   // a link to a page, a name or an entry: straight there, from above
     Object.assign(view, { tilt: view.tt });
@@ -1731,9 +2096,6 @@ dlg.addEventListener("close", () => updateBar());   // back to the page's addres
     showSpread();
     Object.assign(view, { tilt: view.tt });
     render();
-    let seen = false;
-    try { seen = localStorage.getItem("story") === "seen"; } catch {}
-    if (!seen && beside()) showStory();   // the history beside the closed book, the first time on a wide screen
-    inviteOpen(900);
+    showStory(true);   // the foreword beside the closed book (below it on a phone), every time at the front door
   }
 })();
