@@ -4,6 +4,9 @@
 import { check, entryContext, json, normalise, seen, STALE, tally } from "../../lib/readings.js";
 
 const DEVICE = /^[0-9a-f]{32}$/;
+// Apelyido uses the same Turnstile site key, so a token must have been solved on this site: the book's own address
+// or a Pages address of this project (catalogo-1849.pages.dev and its previews).
+const HOST = /^(catalogo-1849\.ruzcko\.com|([a-z0-9-]+\.)?catalogo-1849\.pages\.dev)$/;
 
 async function sha256(s) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -28,7 +31,7 @@ export async function onRequestPost({ request, env }) {
   form.append("response", String(body?.token || ""));
   const verified = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form })
     .then(r => r.json()).catch(() => ({ success: false }));
-  if (!verified.success) return json({ ok: false, error: "verify" }, 403);
+  if (!verified.success || !HOST.test(String(verified.hostname || ""))) return json({ ok: false, error: "verify" }, 403);
 
   const day = new Date().toISOString().slice(0, 10);
   const voter = await sha256(`${device}:catalogo`);

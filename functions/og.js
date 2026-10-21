@@ -4,6 +4,7 @@
 import { initWasm, Resvg } from "../lib/og/resvg.mjs";
 import wasm from "../lib/og/resvg.wasm";
 import { cap, esc, UNREAD } from "../lib/book.js";
+import { fold } from "../lib/readings.js";
 
 const W = 1200, H = 630, INK = "#2a2017", PAPER = "#efe4c8", RED = "#9a3b1f";
 let ready = null, fonts = null;
@@ -80,26 +81,36 @@ function card({ k, n, w, page, data }) {
 }
 
 export async function onRequestGet({ request, env, waitUntil }) {
-  const cache = caches.default, hit = await cache.match(request);
-  if (hit) return hit;
   const url = new URL(request.url), p = url.searchParams;
   const k = ["page", "missing", "name", "entry"].includes(p.get("k")) ? p.get("k") : "home";
-  const n = /^\d{1,3}$/.test(p.get("n") || "") ? +p.get("n") : null;
-  let w = /^[\p{L} -]{1,30}$/u.test(p.get("w") || "") ? p.get("w").toLowerCase() : null;
+  const n = k !== "home" && /^\d{1,3}$/.test(p.get("n") || "") ? +p.get("n") : null;
+  // Only a name or entry card shows a word.
+  let w = (k === "name" || k === "entry") && /^[\p{L} -]{1,30}$/u.test(p.get("w") || "") ? p.get("w").toLowerCase() : null;
   if (k === "entry" && w === UNREAD) w = "?";
   if ((k !== "home" && !n) || ((k === "name" || k === "entry") && !w)) return new Response("bad request", { status: 400 });
+  // Cached under an address made only of what the card is drawn from (plus the release, ?v=), so stray or
+  // reordered parameters don't each draw and keep another copy.
+  const key = new URLSearchParams({ k });
+  if (n) key.set("n", String(n));
+  if (w) key.set("w", w === "?" ? UNREAD : w);
+  if (/^\d{1,3}$/.test(p.get("v") || "")) key.set("v", p.get("v"));
+  const cacheKey = new Request(`${url.origin}/og?${key}`);
+  const cache = caches.default, hit = await cache.match(cacheKey);
+  if (hit) return hit;
   try {
     const fontData = await setup(env, url.origin);
     const pages = await env.ASSETS.fetch(new URL("/data/pages.json", url.origin)).then(r => r.json());
     const page = n ? pages.find(x => x.n === n) : null;
     const data = page && !page.missing ? await env.ASSETS.fetch(new URL(`/data/p/${n}.json`, url.origin)).then(r => r.json()) : null;
+    // A name or entry card only for a word that's on that page, so nobody can make a card saying any word is in the book.
+    if (w && !data?.e.some(e => fold(e[4]) === fold(w))) return new Response("not in the book", { status: 400 });
     const show = k === "home" ? await env.ASSETS.fetch(new URL("/data/p/58.json", url.origin)).then(r => r.json()) : data;
     const png = new Resvg(card({ k, n, w, page, data: show }), {
       font: { fontBuffers: fontData, defaultFontFamily: "IM FELL English", loadSystemFonts: false },
       fitTo: { mode: "width", value: W },
     }).render().asPng();
     const res = new Response(png, { headers: { "content-type": "image/png", "cache-control": "public, max-age=604800" } });
-    waitUntil(cache.put(request, res.clone()));
+    waitUntil(cache.put(cacheKey, res.clone()));
     return res;
   } catch (e) {
     return new Response("could not draw the card", { status: 500 });

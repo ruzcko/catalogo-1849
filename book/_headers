@@ -11,6 +11,10 @@
 /data/*
   Cache-Control: public, max-age=3600
 
+# The same list as lib/security.js (pages a Function builds don't get these rules): keep the two in step.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-bdyznYulzSGHB3rRO5uV1nvlyFAP4xEFMksag9Ti9zA=' 'sha256-mPI/Eg6Ea8jS5Iq3TsUhZ14M32IbLoYs/WxyLV6+Wb0=' https://cdn.jsdelivr.net/npm/three@0.169.0/ https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://apelyido.ruzcko.com https://*.apelyido.pages.dev; font-src 'self'; connect-src 'self' https://apelyido.ruzcko.com https://*.apelyido.pages.dev; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

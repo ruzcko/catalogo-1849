@@ -2,6 +2,7 @@
 // address points at (/58, /fabella, /58/glubig), so a shared link shows its own card in Messenger, Facebook or X.
 // Files (anything with a dot, /data/, /fonts/) and the bare address go straight through.
 import { cap, esc, resolve, UNREAD } from "../lib/book.js";
+import { secure } from "../lib/security.js";
 
 class SetContent {
   constructor(value) { this.value = value; }
@@ -13,7 +14,7 @@ export async function onRequestGet(context) {
   if (path === "/" || path.includes(".") || path.startsWith("/data/") || path.startsWith("/fonts/")) return context.next();
   const page = await env.ASSETS.fetch(new URL("/", url.origin));
   const r = await resolve(env, url.origin, path).catch(() => null);
-  if (!r) return page;
+  if (!r) return secure(page);
   let title, desc, card;
   const q = new URLSearchParams({ k: r.kind, n: String(r.n) });
   if (r.kind === "page") {
@@ -37,7 +38,7 @@ export async function onRequestGet(context) {
     desc = `Help read page ${r.n} of the Catálogo alfabético de apellidos. The OCR's best guess is “${r.word}”, but the scan is blurry.`;
   }
   card = `${url.origin}/og?${q}&v=1`;
-  return new HTMLRewriter()
+  return secure(new HTMLRewriter()
     .on("title", { element(el) { el.setInnerContent(esc(title), { html: true }); } })
     .on('meta[property="og:title"]', new SetContent(title))
     .on('meta[property="og:description"]', new SetContent(desc))
@@ -45,5 +46,5 @@ export async function onRequestGet(context) {
     .on('meta[property="og:image"]', new SetContent(card))
     .on('meta[name="twitter:image"]', new SetContent(card))
     .on('meta[property="og:url"]', new SetContent(url.origin + path))
-    .transform(new Response(page.body, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" } }));
+    .transform(new Response(page.body, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" } })));
 }
