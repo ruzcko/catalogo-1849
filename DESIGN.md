@@ -15,14 +15,14 @@ The look below, **the museum wing in the book's own type**, was chosen on **2026
 - **Colour is rationed.** The room is garnet, the chrome (bars, panels, dialogs) is plaster, and the text is ink. Gold is only for the frame and the placard you're reading. The OCR-certainty shades (section 2, meaning colours) are the only other colours.
 - Colour always means something. Don't add colour for decoration.
 - **The type is older than the book.** IM Fell is Igino Marini's digital revival of the Fell Types, collected at Oxford in the 1670s: an old letterpress face, in keeping with a book printed in 1849. Its small caps carry the headings, the way old title pages do.
-- **Deliberate exceptions to Claude's defaults:**
+- **Old-book conventions, kept on purpose:**
   - **Small-caps kickers and headings** in IM Fell English SC, because old title pages and museum labels set them this way. They are not monospace, and not numbered "01 / 02".
   - **Italics in body text** (Spanish words, book titles) follow the 1849 convention. Headlines are never italic.
   - The placard number in the foreword (the small "1", "2" before a kicker) stays: a museum labels its objects in order. It is a single figure, never "01".
 
 What stays fixed whatever the look:
 - **The book first.** The 3D book is visible and usable on every screen; nothing covers it except a dialog you opened.
-- **Every history line has a source line** under it (see `README.md` and the rules in the user's "Apelyido story" note).
+- **Every history line has a source line** under it (see `README.md`).
 - **A surname is not a guide to ancestry.** No copy suggests it is.
 
 ## 2. Colour
@@ -161,7 +161,7 @@ Most visitors are on phones.
 
 ### How to check
 
-**2026-10-15**, on the built pages served locally (asset v45): the design lint on `book/` (3 files, 0 errors, 0 warnings); the contrast and tap-target snippets from the `design-brief` skill in **both themes** at **1024 px** and **375 px**, with the reading view, the foreword, the About, View (with an (i) open), Go to, names list and entry dialogs, and the search results each open. Contrast: about 2,500 text elements and icons checked across those states, **0 failures** after the fixes above (the faint placards are the listed exception). Tap targets: every control at least 44 × 44 px and **0 overlaps**, including all 852 names in the names list. Not yet checked: the link preview (`functions/og.js`, still the old palette).
+**2026-10-15**, on the built pages served locally (asset v45): the design lint on `book/` (3 files, 0 errors, 0 warnings); the contrast and tap-target checks in **both themes** at **1024 px** and **375 px**, with the reading view, the foreword, the About, View (with an (i) open), Go to, names list and entry dialogs, and the search results each open. Contrast: about 2,500 text elements and icons checked across those states, **0 failures** after the fixes above (the faint placards are the listed exception). Tap targets: every control at least 44 × 44 px and **0 overlaps**, including all 852 names in the names list. Not yet checked: the link preview (`functions/og.js`, still the old palette).
 
 ## History
 
